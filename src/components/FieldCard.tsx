@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd } from '../types';
-import { getCurrentStage, getProgressPercent, MATURITY_GDD } from '../utils/cornStages';
+import { getCropConfig } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 
 interface FieldCardProps {
@@ -9,23 +9,36 @@ interface FieldCardProps {
   onClick: () => void;
 }
 
+const CROP_EMOJI: Record<string, string> = {
+  corn: '🌽',
+  soybean: '🫘',
+  wheat: '🌾',
+};
+
 export function FieldCard({ field, onClick }: FieldCardProps) {
+  const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchData(field.sowingDate, field.stationMac)
+    fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
       .then((result) => setGddData(result.gdd))
       .catch(() => setGddData(null))
       .finally(() => setLoading(false));
-  }, [field.sowingDate, field.stationMac, fetchData]);
+  }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF]);
 
   const latestGdd = gddData && gddData.length > 0 ? gddData[gddData.length - 1] : null;
   const cumulative = latestGdd?.cumulative ?? 0;
-  const stage = getCurrentStage(cumulative);
-  const progress = getProgressPercent(cumulative);
+
+  // Crop-specific stage lookup
+  let currentStage = null;
+  for (const s of cropConfig.stages) {
+    if (cumulative >= s.gdd) currentStage = s;
+    else break;
+  }
+  const progress = Math.min(100, Math.round((cumulative / cropConfig.maturityGdd) * 100));
   const daysSinceSowing = differenceInDays(new Date(), parseISO(field.sowingDate));
 
   return (
@@ -36,7 +49,7 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
       </div>
 
       <p className="text-xs mb-3" style={{ color: 'var(--tx2)' }}>
-        Sowed: {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
+        {CROP_EMOJI[field.cropType ?? 'corn']} {cropConfig.label} &middot; Sowed: {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
       </p>
 
       {loading ? (
@@ -51,8 +64,8 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
               {Math.round(cumulative)}
             </span>
             <span className="text-[11px]" style={{ color: 'var(--tx3)' }}>GDD</span>
-            {stage && (
-              <span className="agraria-badge ml-auto">{stage.shortName}</span>
+            {currentStage && (
+              <span className="agraria-badge ml-auto">{currentStage.shortName}</span>
             )}
           </div>
 
@@ -62,7 +75,7 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{progress}%</span>
-            <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{MATURITY_GDD} GDD</span>
+            <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{cropConfig.maturityGdd} GDD</span>
           </div>
         </>
       )}
