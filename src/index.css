@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+/* ── Agraria Design System ── */
+:root {
+  --blue: #185FA5;
+  --blue-d: #0c3d6e;
+  --blue-l: #E6F1FB;
+  --blue-m: #378ADD;
+  --orange: #d85a30;
+  --bg: #f2f1ec;
+  --surface: #fff;
+  --surface2: #f0efea;
+  --surface3: #e4e3dc;
+  --bdr: rgba(0,0,0,.10);
+  --bdr2: rgba(0,0,0,.20);
+  --tx: #1a1a18;
+  --tx2: #5f5e5a;
+  --tx3: #888780;
+  --r: 10px;
+  --rl: 14px;
+  /* status colors */
+  --sb: #EAF3DE; --st: #3B6D11;
+  --wb: #FAEEDA; --wt: #854F0B;
+  --db: #FCEBEB; --dt: #A32D2D;
+  --ib: #E6F1FB; --it: #185FA5;
+}
+
+.dark {
+  --bg: #1a1a18;
+  --surface: #2c2c2a;
+  --surface2: #363634;
+  --surface3: #424240;
+  --bdr: rgba(255,255,255,.08);
+  --bdr2: rgba(255,255,255,.18);
+  --tx: #f0efea;
+  --tx2: #b4b2a9;
+  --tx3: #888780;
+  --blue-l: #042C53;
+  --sb: #173404; --st: #C0DD97;
+  --wb: #412402; --wt: #FAC775;
+  --db: #501313; --dt: #F7C1C1;
+  --ib: #042C53; --it: #B5D4F4;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  font-size: 15px;
+  transition: background 0.2s, color 0.2s;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* Utility overrides for Agraria palette */
+.agraria-header {
+  background: var(--blue);
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 12px;
+}
+
+.agraria-card {
+  background: var(--surface);
+  border: 0.5px solid var(--bdr2);
+  border-radius: var(--rl);
+  padding: 14px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.agraria-card:hover {
+  border-color: var(--blue-m);
+}
+
+.agraria-input {
+  height: 38px;
+  padding: 0 10px;
+  border: 0.5px solid var(--bdr2);
+  border-radius: var(--r);
+  background: var(--surface2);
+  color: var(--tx);
+  font-size: 14px;
+  width: 100%;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.agraria-input:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.agraria-btn-primary {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--r);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.agraria-btn-primary:hover {
+  background: var(--blue-d);
+}
+
+.agraria-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.agraria-btn-secondary {
+  background: var(--ib);
+  color: var(--it);
+  border: none;
+  border-radius: var(--r);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.agraria-btn-secondary:hover {
+  opacity: 0.85;
+}
+
+.agraria-btn-orange {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+
+.agraria-btn-orange:active {
+  background: #b84820;
+}
+
+.agraria-info-row {
+  background: var(--ib);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  transition: background 0.2s;
+}
+
+.agraria-badge {
+  display: inline-block;
+  background: var(--ib);
+  color: var(--it);
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.agraria-progress-bar {
+  background: var(--surface3);
+  border-radius: 6px;
+  height: 16px;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+
+.agraria-progress-fill {
+  background: var(--blue);
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.sec-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+
+/* Theme toggle switch */
+.theme-toggle {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.25);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  z-index: 1;
+}
+
+.dark .theme-toggle::after {
+  transform: translateX(24px);
+}
+
+.theme-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity 0.2s;
+  z-index: 0;
+}
+
+.theme-icon-sun {
+  left: 5px;
+  color: #fbbf24;
+  opacity: 1;
+}
+
+.theme-icon-moon {
+  right: 5px;
+  color: #93c5fd;
+  opacity: 0.5;
+}
+
+.dark .theme-icon-sun {
+  opacity: 0.5;
+}
+
+.dark .theme-icon-moon {
+  opacity: 1;
+}
+
+/* Status colors */
+.status-success { background: var(--sb); color: var(--st); }
+.status-warning { background: var(--wb); color: var(--wt); }
+.status-danger  { background: var(--db); color: var(--dt); }
+.status-info    { background: var(--ib); color: var(--it); }
