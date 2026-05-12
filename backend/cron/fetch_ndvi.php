@@ -64,11 +64,10 @@ function setup() {
       bands: ["B04", "B08", "SCL"],
       units: "DN"
     }],
-    output: [{
-      id: "ndvi",
-      bands: 1,
-      sampleType: "FLOAT32"
-    }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1 }
+    ],
     mosaicking: "ORBIT"
   };
 }
@@ -76,21 +75,16 @@ function setup() {
 function evaluatePixel(samples) {
   // Cloud mask using SCL band
   // SCL 3=cloud shadow, 8=cloud medium, 9=cloud high, 10=cirrus
-  let dominated = false;
-  let validNdvi = NaN;
-
   for (let i = 0; i < samples.length; i++) {
     let scl = samples[i].SCL;
     if (scl === 3 || scl === 8 || scl === 9 || scl === 10) continue;
     let nir = samples[i].B08;
     let red = samples[i].B04;
     if (nir + red === 0) continue;
-    validNdvi = (nir - red) / (nir + red);
-    dominated = true;
-    break;
+    let ndvi = (nir - red) / (nir + red);
+    return { ndvi: [ndvi], dataMask: [1] };
   }
-
-  return { ndvi: [dominated ? validNdvi : NaN] };
+  return { ndvi: [NaN], dataMask: [0] };
 }
 SCRIPT;
 
