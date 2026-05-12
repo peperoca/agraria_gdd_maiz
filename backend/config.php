@@ -23,3 +23,12 @@ define('TOKEN_EXPIRY_DAYS', 30);
 
 // Ambient Weather API base URL
 define('AMBIENT_API_URL', 'https://rt.ambientweather.net/v1/devices');
+
+// Copernicus Data Space Ecosystem (CDSE) — Sentinel Hub
+define('CDSE_CLIENT_ID', '');     // Fill with your CDSE client ID
+define('CDSE_CLIENT_SECRET', ''); // Fill with your CDSE client secret
+define('CDSE_TOKEN_URL', 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token');
+define('SENTINEL_HUB_STATS_URL', 'https://sh.dataspace.copernicus.eu/api/v1/statistics');
+
+// Cron secret key for web triggers
+define('CRON_SECRET', 'CHANGE_THIS_TO_A_RANDOM_STRING');

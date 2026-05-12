@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import type { Field, DailyGdd, DailyEto, DailyRain } from '../types';
+import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
 import { getCropConfig } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
+import { getNdviData } from '../utils/api';
+import { calculateETc } from '../utils/ndvi';
 import { GddChart } from './GddChart';
 import { EtoChart } from './EtoChart';
+import { NdviChart } from './NdviChart';
+import { WaterBalanceChart } from './WaterBalanceChart';
 import { GrowthStages } from './GrowthStages';
 
 interface FieldDetailProps {
@@ -17,6 +21,8 @@ export function FieldDetail({ field }: FieldDetailProps) {
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [etoData, setEtoData] = useState<DailyEto[] | null>(null);
   const [rainData, setRainData] = useState<DailyRain[] | null>(null);
+  const [ndviData, setNdviData] = useState<NdviReading[] | null>(null);
+  const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
 
   useEffect(() => {
     fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
@@ -27,6 +33,30 @@ export function FieldDetail({ field }: FieldDetailProps) {
       })
       .catch(() => {});
   }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF]);
+
+  // Fetch NDVI data if field has polygon
+  useEffect(() => {
+    if (!field.polygon) return;
+    getNdviData(field.id)
+      .then((raw) => {
+        const readings: NdviReading[] = raw.map((r) => ({
+          date: r.date,
+          ndviMean: r.ndvi_mean,
+          kc: r.kc,
+          cloudPct: r.cloud_pct,
+        }));
+        setNdviData(readings);
+      })
+      .catch(() => setNdviData(null));
+  }, [field.id, field.polygon]);
+
+  // Calculate ETc when both ETo and NDVI are available
+  useEffect(() => {
+    if (etoData && ndviData && ndviData.length > 0) {
+      const etc = calculateETc(etoData, ndviData);
+      setEtcData(etc);
+    }
+  }, [etoData, ndviData]);
 
   const latestGdd = gddData && gddData.length > 0 ? gddData[gddData.length - 1] : null;
   const cumulative = latestGdd?.cumulative ?? 0;
@@ -109,6 +139,14 @@ export function FieldDetail({ field }: FieldDetailProps) {
         <EtoChart data={etoData} rainData={rainData ?? undefined} />
       )}
 
+      {/* NDVI Chart */}
+      {ndviData && ndviData.length > 0 && <NdviChart data={ndviData} />}
+
+      {/* Water Balance Chart (Rain vs ETc) */}
+      {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (
+        <WaterBalanceChart etcData={etcData} rainData={rainData} />
+      )}
+
       {/* Growth stages */}
       {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={field.cropType ?? 'corn'} />}
 
@@ -129,6 +167,9 @@ export function FieldDetail({ field }: FieldDetailProps) {
                   {hasRain && (
                     <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Rain</th>
                   )}
+                  {etcData && etcData.length > 0 && (
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>ETc</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -138,6 +179,7 @@ export function FieldDetail({ field }: FieldDetailProps) {
                   .map((d) => {
                     const etoDay = etoData?.find((e) => e.date === d.date);
                     const rainDay = rainData?.find((r) => r.date === d.date);
+                    const etcDay = etcData?.find((e) => e.date === d.date);
                     return (
                       <tr key={d.date} style={{ borderBottom: '0.5px solid var(--bdr)' }}>
                         <td className="py-1.5 px-2" style={{ color: 'var(--tx)' }}>
@@ -157,6 +199,11 @@ export function FieldDetail({ field }: FieldDetailProps) {
                         {hasRain && (
                           <td className="py-1.5 px-2 text-right font-medium" style={{ color: '#1a9988' }}>
                             {rainDay && rainDay.rain > 0 ? `${rainDay.rain.toFixed(1)}` : '—'}
+                          </td>
+                        )}
+                        {etcData && etcData.length > 0 && (
+                          <td className="py-1.5 px-2 text-right font-medium" style={{ color: '#dc2626' }}>
+                            {etcDay ? `${etcDay.etc.toFixed(2)}` : '—'}
                           </td>
                         )}
                       </tr>

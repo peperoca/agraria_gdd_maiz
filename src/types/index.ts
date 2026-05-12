@@ -116,6 +116,19 @@ export interface AdminStation {
   createdAt: string;
 }
 
+export interface NdviReading {
+  date: string;       // YYYY-MM-DD
+  ndviMean: number;
+  kc: number;
+  cloudPct: number | null;
+}
+
+export interface DailyETc {
+  date: string;       // YYYY-MM-DD
+  etc: number;        // Daily ETc (mm/day)
+  cumulative: number; // Cumulative ETc (mm)
+}
+
 export interface AppSettings {
   stationMac: string;
   stationName: string;

@@ -212,6 +212,19 @@ export async function getWeatherData(
   return apiFetch<WeatherReadingRaw[]>(`weather.php?${params}`);
 }
 
+// --- NDVI ---
+
+export interface NdviReadingRaw {
+  date: string;
+  ndvi_mean: number;
+  kc: number;
+  cloud_pct: number | null;
+}
+
+export async function getNdviData(fieldId: number): Promise<NdviReadingRaw[]> {
+  return apiFetch<NdviReadingRaw[]>(`ndvi.php?field_id=${fieldId}`);
+}
+
 // --- Admin ---
 
 import type { AdminUser, AdminStation } from '../types';
