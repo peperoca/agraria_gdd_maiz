@@ -5,6 +5,8 @@ import { getCropConfig } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 import { getNdviData } from '../utils/api';
 import { calculateETc } from '../utils/ndvi';
+import { exportFieldCsv } from '../utils/exportCsv';
+import { exportFieldPdf } from '../utils/exportPdf';
 import { GddChart } from './GddChart';
 import { EtoChart } from './EtoChart';
 import { NdviChart } from './NdviChart';
@@ -130,6 +132,32 @@ export function FieldDetail({ field }: FieldDetailProps) {
           </>
         )}
       </div>
+
+      {/* Export buttons */}
+      {gddData && gddData.length > 0 && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportFieldCsv(
+              field.name, gddData, etoData ?? [], rainData ?? [],
+              ndviData ?? [], etcData ?? [],
+            )}
+            className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium border"
+            style={{ borderColor: 'var(--bdr2)', color: 'var(--tx2)', background: 'var(--surface)' }}
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => exportFieldPdf(
+              field, gddData, etoData ?? [], rainData ?? [],
+              ndviData ?? [], etcData ?? [],
+            )}
+            className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium border"
+            style={{ borderColor: 'var(--bdr2)', color: 'var(--tx2)', background: 'var(--surface)' }}
+          >
+            Export PDF
+          </button>
+        </div>
+      )}
 
       {/* GDD Chart */}
       {gddData && gddData.length > 0 && <GddChart data={gddData} />}
