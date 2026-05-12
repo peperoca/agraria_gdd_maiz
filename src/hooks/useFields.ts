@@ -21,6 +21,7 @@ export function useFields(farmId?: number | null) {
           name: f.name,
           sowingDate: f.sowingDate,
           cropType: f.cropType ?? 'corn',
+          polygon: f.polygon ?? null,
           stationMac: f.stationMac,
           stationName: f.stationName,
           farmId: f.farmId,
@@ -39,8 +40,15 @@ export function useFields(farmId?: number | null) {
   }, [refresh]);
 
   const add = useCallback(
-    async (data: { name: string; sowingDate: string; stationMac: string; cropType?: string; farmId?: number }) => {
-      const newField = await api.createField(data.name, data.sowingDate, data.stationMac, data.cropType, data.farmId);
+    async (data: {
+      name: string; sowingDate: string; stationMac: string;
+      cropType?: string; farmId?: number;
+      polygon?: { type: 'Polygon'; coordinates: number[][][] } | null;
+    }) => {
+      const newField = await api.createField(
+        data.name, data.sowingDate, data.stationMac,
+        data.cropType, data.farmId, data.polygon,
+      );
       await refresh();
       return newField;
     },
@@ -48,7 +56,10 @@ export function useFields(farmId?: number | null) {
   );
 
   const update = useCallback(
-    async (id: number, updates: { name?: string; sowingDate?: string; cropType?: string }) => {
+    async (id: number, updates: {
+      name?: string; sowingDate?: string; cropType?: string;
+      polygon?: { type: 'Polygon'; coordinates: number[][][] } | null;
+    }) => {
       await api.updateField(id, updates);
       await refresh();
     },

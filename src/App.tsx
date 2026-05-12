@@ -10,7 +10,7 @@ import { FarmSwitcher } from './components/FarmSwitcher';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
-import type { Field, Farm, User } from './types';
+import type { Field, Farm, User, FieldPolygon } from './types';
 import type { CropType } from './utils/cropConfig';
 
 type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm';
@@ -70,13 +70,13 @@ function App() {
   const currentFarm = farms.find((f) => f.id === currentFarmId) ?? null;
   const selectedField = fields.find((f) => f.id === selectedFieldId) ?? null;
 
-  const handleAddField = async (data: { name: string; sowingDate: string; cropType: CropType }) => {
+  const handleAddField = async (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => {
     const stationMac = currentFarm?.stationMac || stations[0]?.mac || '';
-    await add({ ...data, stationMac, farmId: currentFarmId ?? undefined });
+    await add({ ...data, stationMac, farmId: currentFarmId ?? undefined, polygon: data.polygon });
     setView('dashboard');
   };
 
-  const handleEditField = async (data: { name: string; sowingDate: string; cropType: CropType }) => {
+  const handleEditField = async (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => {
     if (selectedFieldId !== null) {
       await update(selectedFieldId, data);
       setView('field-detail');
@@ -311,13 +311,20 @@ function App() {
           )
         )}
         {view === 'add-field' && (
-          <FieldForm onSubmit={handleAddField} onCancel={() => setView('dashboard')} />
+          <FieldForm
+            onSubmit={handleAddField}
+            onCancel={() => setView('dashboard')}
+            farmLat={currentFarm?.latitude}
+            farmLng={currentFarm?.longitude}
+          />
         )}
         {view === 'edit-field' && selectedField && (
           <FieldForm
             field={selectedField}
             onSubmit={handleEditField}
             onCancel={() => setView('field-detail')}
+            farmLat={currentFarm?.latitude}
+            farmLng={currentFarm?.longitude}
           />
         )}
         {view === 'field-detail' && selectedField && (

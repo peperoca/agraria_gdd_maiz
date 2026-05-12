@@ -1,8 +1,14 @@
+export interface FieldPolygon {
+  type: 'Polygon';
+  coordinates: number[][][]; // GeoJSON Polygon coordinates
+}
+
 export interface Field {
   id: number;
   name: string;
   sowingDate: string; // ISO date string YYYY-MM-DD
   cropType: 'corn' | 'soybean' | 'wheat';
+  polygon: FieldPolygon | null;
   stationMac: string;
   stationName?: string;
   farmId?: number;

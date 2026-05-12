@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import type { Field } from '../types';
+import type { Field, FieldPolygon } from '../types';
 import { CROP_CONFIGS, type CropType } from '../utils/cropConfig';
+import { PolygonMap } from './PolygonMap';
 
 interface FieldFormProps {
   field?: Field;
-  onSubmit: (data: { name: string; sowingDate: string; cropType: CropType }) => void;
+  farmLat?: number | null;
+  farmLng?: number | null;
+  onSubmit: (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => void;
   onCancel: () => void;
 }
 
-export function FieldForm({ field, onSubmit, onCancel }: FieldFormProps) {
+export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: FieldFormProps) {
   const [name, setName] = useState(field?.name ?? '');
   const [sowingDate, setSowingDate] = useState(field?.sowingDate ?? '');
   const [cropType, setCropType] = useState<CropType>(field?.cropType ?? 'corn');
+  const [polygon, setPolygon] = useState<FieldPolygon | null>(field?.polygon ?? null);
 
   const isEditing = !!field;
   const isValid = name.trim().length > 0 && sowingDate.length > 0;
@@ -19,7 +23,7 @@ export function FieldForm({ field, onSubmit, onCancel }: FieldFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
-    onSubmit({ name: name.trim(), sowingDate, cropType });
+    onSubmit({ name: name.trim(), sowingDate, cropType, polygon });
   };
 
   return (
@@ -62,6 +66,19 @@ export function FieldForm({ field, onSubmit, onCancel }: FieldFormProps) {
             className="agraria-input"
           />
         </div>
+
+        {/* Polygon map */}
+        <PolygonMap
+          centerLat={farmLat ?? undefined}
+          centerLng={farmLng ?? undefined}
+          polygon={polygon}
+          onChange={setPolygon}
+        />
+        {polygon && (
+          <div className="text-[10px]" style={{ color: 'var(--tx3)' }}>
+            Polygon drawn ({polygon.coordinates[0].length - 1} points)
+          </div>
+        )}
 
         <div className="flex gap-2 pt-1">
           <button

@@ -19,8 +19,8 @@ if ($fieldId <= 0) json_error('Field ID is required');
 // Verify ownership
 $stmt = $db->prepare("
     SELECT id, name, sowing_date AS sowingDate, station_mac AS stationMac,
-           COALESCE(crop_type, 'corn') AS cropType, farm_id AS farmId,
-           created_at AS createdAt
+           COALESCE(crop_type, 'corn') AS cropType, polygon,
+           farm_id AS farmId, created_at AS createdAt
     FROM fields
     WHERE id = ? AND user_id = ?
 ");
@@ -30,6 +30,7 @@ $field = $stmt->fetch();
 if (!$field) json_error('Field not found', 404);
 $field['id'] = (int) $field['id'];
 $field['farmId'] = $field['farmId'] !== null ? (int) $field['farmId'] : null;
+$field['polygon'] = $field['polygon'] ? json_decode($field['polygon'], true) : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     json_response($field);
@@ -46,14 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $sowingDate)) json_error('Invalid sowing date format');
     if (!in_array($cropType, ['corn', 'soybean', 'wheat'])) json_error('Invalid crop type');
 
-    $stmt = $db->prepare("UPDATE fields SET name = ?, sowing_date = ?, crop_type = ? WHERE id = ?");
-    $stmt->execute([$name, $sowingDate, $cropType, $fieldId]);
+    $polygon = array_key_exists('polygon', $body)
+        ? ($body['polygon'] ? json_encode($body['polygon']) : null)
+        : ($field['polygon'] ? json_encode($field['polygon']) : null);
+
+    $stmt = $db->prepare("UPDATE fields SET name = ?, sowing_date = ?, crop_type = ?, polygon = ? WHERE id = ?");
+    $stmt->execute([$name, $sowingDate, $cropType, $polygon, $fieldId]);
 
     json_response([
         'id' => $fieldId,
         'name' => $name,
         'sowingDate' => $sowingDate,
         'cropType' => $cropType,
+        'polygon' => $polygon ? json_decode($polygon, true) : null,
         'stationMac' => $field['stationMac'],
         'farmId' => $field['farmId'],
         'createdAt' => $field['createdAt'],

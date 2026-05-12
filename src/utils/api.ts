@@ -148,6 +148,7 @@ export interface ServerField {
   name: string;
   sowingDate: string;
   cropType: 'corn' | 'soybean' | 'wheat';
+  polygon: { type: 'Polygon'; coordinates: number[][][] } | null;
   stationMac: string;
   stationName?: string;
   farmId?: number;
@@ -162,14 +163,18 @@ export async function getFields(farmId?: number): Promise<ServerField[]> {
 export async function createField(
   name: string, sowingDate: string, stationMac: string,
   cropType: string = 'corn', farmId?: number,
+  polygon?: { type: 'Polygon'; coordinates: number[][][] } | null,
 ): Promise<ServerField> {
   return apiFetch<ServerField>('fields.php', {
     method: 'POST',
-    body: JSON.stringify({ name, sowingDate, stationMac, cropType, farmId }),
+    body: JSON.stringify({ name, sowingDate, stationMac, cropType, farmId, polygon }),
   });
 }
 
-export async function updateField(id: number, data: { name?: string; sowingDate?: string; cropType?: string }): Promise<{ success: boolean }> {
+export async function updateField(id: number, data: {
+  name?: string; sowingDate?: string; cropType?: string;
+  polygon?: { type: 'Polygon'; coordinates: number[][][] } | null;
+}): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

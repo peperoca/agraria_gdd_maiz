@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $db->prepare("
             SELECT f.id, f.name, f.sowing_date AS sowingDate,
                    COALESCE(f.crop_type, 'corn') AS cropType,
+                   f.polygon,
                    f.station_mac AS stationMac, f.farm_id AS farmId,
                    f.created_at AS createdAt
             FROM fields f
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $db->prepare("
             SELECT f.id, f.name, f.sowing_date AS sowingDate,
                    COALESCE(f.crop_type, 'corn') AS cropType,
+                   f.polygon,
                    f.station_mac AS stationMac, f.farm_id AS farmId,
                    f.created_at AS createdAt
             FROM fields f
@@ -49,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach ($fields as &$f) {
         $f['id'] = (int) $f['id'];
         $f['farmId'] = $f['farmId'] !== null ? (int) $f['farmId'] : null;
+        $f['polygon'] = $f['polygon'] ? json_decode($f['polygon'], true) : null;
     }
 
     json_response($fields);
@@ -62,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stationMac = $body['stationMac'] ?? '';
     $cropType = $body['cropType'] ?? 'corn';
     $farmId = isset($body['farmId']) ? (int) $body['farmId'] : null;
+    $polygon = isset($body['polygon']) && $body['polygon'] ? json_encode($body['polygon']) : null;
 
     if (!$name) json_error('Field name is required');
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $sowingDate)) json_error('Invalid sowing date format (use YYYY-MM-DD)');
@@ -81,10 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$stationMac) json_error('No station available. Create a farm with a location first.');
 
     $stmt = $db->prepare("
-        INSERT INTO fields (user_id, name, sowing_date, station_mac, crop_type, farm_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO fields (user_id, name, sowing_date, station_mac, crop_type, farm_id, polygon)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$user['id'], $name, $sowingDate, $stationMac, $cropType, $farmId]);
+    $stmt->execute([$user['id'], $name, $sowingDate, $stationMac, $cropType, $farmId, $polygon]);
     $fieldId = (int) $db->lastInsertId();
 
     json_response([
@@ -93,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'sowingDate' => $sowingDate,
         'cropType' => $cropType,
         'stationMac' => $stationMac,
+        'polygon' => $polygon ? json_decode($polygon, true) : null,
         'farmId' => $farmId,
         'createdAt' => date('Y-m-d H:i:s'),
     ], 201);
