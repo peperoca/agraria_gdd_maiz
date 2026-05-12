@@ -117,6 +117,30 @@ function generate_token(): string {
 }
 
 /**
+ * Find the nearest active station within a given radius (km) using Haversine formula.
+ * Returns station row or null if none found.
+ */
+function find_nearest_station(float $lat, float $lon, float $maxKm = 20): ?array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT id, mac, name, latitude, longitude, elevation_m,
+        (6371 * acos(
+            cos(radians(?)) * cos(radians(latitude))
+            * cos(radians(longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(latitude))
+        )) AS distance_km
+        FROM stations
+        WHERE is_active = 1
+        HAVING distance_km <= ?
+        ORDER BY distance_km ASC
+        LIMIT 1
+    ");
+    $stmt->execute([$lat, $lon, $lat, $maxKm]);
+    $result = $stmt->fetch();
+    return $result ?: null;
+}
+
+/**
  * Fetch a URL using cURL (works on cPanel where allow_url_fopen is disabled)
  * Returns ['status' => int, 'body' => string] or ['status' => 0, 'error' => string]
  */

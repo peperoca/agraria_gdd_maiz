@@ -105,29 +105,71 @@ export async function getStations(): Promise<StationInfo[]> {
   return apiFetch<StationInfo[]>('stations.php');
 }
 
+// --- Farms ---
+
+export interface ServerFarm {
+  id: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  stationMac: string | null;
+  stationName: string | null;
+  createdAt: string;
+}
+
+export async function getFarms(): Promise<ServerFarm[]> {
+  return apiFetch<ServerFarm[]>('farms.php');
+}
+
+export async function createFarm(data: { name: string; latitude?: number; longitude?: number }): Promise<ServerFarm> {
+  return apiFetch<ServerFarm>('farms.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateFarm(id: number, data: Record<string, unknown>): Promise<ServerFarm> {
+  return apiFetch<ServerFarm>(`farm.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteFarm(id: number): Promise<{ success: boolean }> {
+  return apiFetch(`farm.php?id=${id}`, {
+    method: 'DELETE',
+  });
+}
+
 // --- Fields ---
 
 export interface ServerField {
   id: number;
   name: string;
   sowingDate: string;
+  cropType: 'corn' | 'soybean' | 'wheat';
   stationMac: string;
   stationName?: string;
+  farmId?: number;
   createdAt: string;
 }
 
-export async function getFields(): Promise<ServerField[]> {
-  return apiFetch<ServerField[]>('fields.php');
+export async function getFields(farmId?: number): Promise<ServerField[]> {
+  const params = farmId ? `?farm_id=${farmId}` : '';
+  return apiFetch<ServerField[]>(`fields.php${params}`);
 }
 
-export async function createField(name: string, sowingDate: string, stationMac: string): Promise<ServerField> {
+export async function createField(
+  name: string, sowingDate: string, stationMac: string,
+  cropType: string = 'corn', farmId?: number,
+): Promise<ServerField> {
   return apiFetch<ServerField>('fields.php', {
     method: 'POST',
-    body: JSON.stringify({ name, sowingDate, stationMac }),
+    body: JSON.stringify({ name, sowingDate, stationMac, cropType, farmId }),
   });
 }
 
-export async function updateField(id: number, data: { name?: string; sowingDate?: string }): Promise<{ success: boolean }> {
+export async function updateField(id: number, data: { name?: string; sowingDate?: string; cropType?: string }): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

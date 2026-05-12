@@ -1,16 +1,21 @@
 import type { WeatherReading, HourlyTemp, DailyGdd } from '../types';
 import { getStationLocalDate, getStationLocalHour } from './stationTime';
 
-const BASE_TEMP = 50; // °F
-const UPPER_CAP = 86; // °F
+const DEFAULT_BASE_TEMP = 50; // °F
+const DEFAULT_UPPER_CAP = 86; // °F
 
 /**
  * Calculate GDD contribution for a single hour.
- * Applies the 50°F floor and 86°F cap before subtracting base temp.
+ * Applies the base floor and optional upper cap before subtracting base temp.
  */
-export function hourlyGddContribution(tempF: number): number {
-  const capped = Math.min(Math.max(tempF, BASE_TEMP), UPPER_CAP);
-  return capped - BASE_TEMP;
+export function hourlyGddContribution(
+  tempF: number,
+  baseTemp: number = DEFAULT_BASE_TEMP,
+  upperCap: number | null = DEFAULT_UPPER_CAP,
+): number {
+  let capped = Math.max(tempF, baseTemp);
+  if (upperCap !== null) capped = Math.min(capped, upperCap);
+  return capped - baseTemp;
 }
 
 /**
@@ -60,7 +65,9 @@ export function groupReadingsToHourly(readings: WeatherReading[]): HourlyTemp[] 
  */
 export function calculateDailyGdd(
   hourlyTemps: HourlyTemp[],
-  sowingDate: string
+  sowingDate: string,
+  baseTemp: number = DEFAULT_BASE_TEMP,
+  upperCap: number | null = DEFAULT_UPPER_CAP,
 ): DailyGdd[] {
   // Group hourly temps by date
   const byDate = new Map<string, HourlyTemp[]>();
@@ -94,7 +101,7 @@ export function calculateDailyGdd(
     let totalDegreeHours = 0;
     for (const temp of filledTemps) {
       if (temp !== null) {
-        totalDegreeHours += hourlyGddContribution(temp);
+        totalDegreeHours += hourlyGddContribution(temp, baseTemp, upperCap);
       }
     }
 
@@ -165,8 +172,10 @@ function interpolateMissingHours(temps: (number | null)[]): (number | null)[] {
  */
 export function processWeatherData(
   readings: WeatherReading[],
-  sowingDate: string
+  sowingDate: string,
+  baseTemp: number = DEFAULT_BASE_TEMP,
+  upperCap: number | null = DEFAULT_UPPER_CAP,
 ): DailyGdd[] {
   const hourlyTemps = groupReadingsToHourly(readings);
-  return calculateDailyGdd(hourlyTemps, sowingDate);
+  return calculateDailyGdd(hourlyTemps, sowingDate, baseTemp, upperCap);
 }

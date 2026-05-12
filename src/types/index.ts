@@ -2,8 +2,20 @@ export interface Field {
   id: number;
   name: string;
   sowingDate: string; // ISO date string YYYY-MM-DD
+  cropType: 'corn' | 'soybean' | 'wheat';
   stationMac: string;
   stationName?: string;
+  farmId?: number;
+  createdAt: string;
+}
+
+export interface Farm {
+  id: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  stationMac: string | null;
+  stationName: string | null;
   createdAt: string;
 }
 

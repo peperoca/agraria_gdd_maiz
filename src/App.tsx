@@ -1,45 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { FieldForm } from './components/FieldForm';
 import { FieldDetail } from './components/FieldDetail';
 import { Settings } from './components/Settings';
 import { Login } from './components/Login';
 import { AdminPanel } from './components/AdminPanel';
+import { FarmForm } from './components/FarmForm';
+import { FarmSwitcher } from './components/FarmSwitcher';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
-import { getSettings } from './utils/storage';
-import { isLoggedIn, logout, getMe, getStations, type StationInfo } from './utils/api';
-import type { Field, User } from './types';
+import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
+import type { Field, Farm, User } from './types';
+import type { CropType } from './utils/cropConfig';
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => isLoggedIn());
   const [user, setUser] = useState<User | null>(null);
-  const { fields, loading: fieldsLoading, add, update, remove, refresh } = useFields();
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [currentFarmId, setCurrentFarmId] = useState<number | null>(null);
+  const { fields, loading: fieldsLoading, add, update, remove, refresh } = useFields(currentFarmId);
   const { theme, toggle: toggleTheme } = useTheme();
   const [view, setView] = useState<View>('dashboard');
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
   const [stations, setStations] = useState<StationInfo[]>([]);
 
-  // Fetch stations and user info when authenticated
+  const fetchFarms = useCallback(async () => {
+    try {
+      const data = await getFarms();
+      setFarms(data);
+      if (data.length > 0 && !currentFarmId) {
+        setCurrentFarmId(data[0].id);
+      }
+    } catch {
+      setFarms([]);
+    }
+  }, [currentFarmId]);
+
+  // Fetch stations, user info, and farms when authenticated
   useEffect(() => {
     if (authenticated) {
-      getStations()
-        .then(setStations)
-        .catch(() => setStations([]));
-
-      getMe()
-        .then(setUser)
-        .catch(() => setUser(null));
-
-      // Check if station is selected, if not go to settings
-      const settings = getSettings();
-      if (!settings.stationMac) {
-        setView('settings');
-      }
+      getStations().then(setStations).catch(() => setStations([]));
+      getMe().then(setUser).catch(() => setUser(null));
+      fetchFarms();
     }
-  }, [authenticated]);
+  }, [authenticated, fetchFarms]);
 
   const handleLoggedIn = () => {
     setAuthenticated(true);
@@ -49,6 +55,9 @@ function App() {
   const handleLogout = async () => {
     await logout();
     setAuthenticated(false);
+    setUser(null);
+    setFarms([]);
+    setCurrentFarmId(null);
     setView('dashboard');
     setSelectedFieldId(null);
   };
@@ -58,15 +67,16 @@ function App() {
     return <Login onLoggedIn={handleLoggedIn} />;
   }
 
+  const currentFarm = farms.find((f) => f.id === currentFarmId) ?? null;
   const selectedField = fields.find((f) => f.id === selectedFieldId) ?? null;
 
-  const handleAddField = async (data: { name: string; sowingDate: string }) => {
-    const settings = getSettings();
-    await add({ ...data, stationMac: settings.stationMac });
+  const handleAddField = async (data: { name: string; sowingDate: string; cropType: CropType }) => {
+    const stationMac = currentFarm?.stationMac || stations[0]?.mac || '';
+    await add({ ...data, stationMac, farmId: currentFarmId ?? undefined });
     setView('dashboard');
   };
 
-  const handleEditField = async (data: { name: string; sowingDate: string }) => {
+  const handleEditField = async (data: { name: string; sowingDate: string; cropType: CropType }) => {
     if (selectedFieldId !== null) {
       await update(selectedFieldId, data);
       setView('field-detail');
@@ -84,6 +94,30 @@ function App() {
     setView('field-detail');
   };
 
+  const handleCreateFarm = async (data: { name: string; latitude?: number; longitude?: number }) => {
+    try {
+      const newFarm = await createFarm(data);
+      await fetchFarms();
+      setCurrentFarmId(newFarm.id);
+      setView('dashboard');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create farm');
+    }
+  };
+
+  const handleDeleteFarm = async () => {
+    if (!currentFarm) return;
+    if (!confirm(`Delete farm "${currentFarm.name}" and all its fields?`)) return;
+    try {
+      await deleteFarm(currentFarm.id);
+      setCurrentFarmId(null);
+      await fetchFarms();
+      setView('dashboard');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete farm');
+    }
+  };
+
   const handleSettingsSaved = () => {
     setView('dashboard');
     refresh();
@@ -99,6 +133,7 @@ function App() {
               if (view === 'field-detail') setView('dashboard');
               else if (view === 'edit-field') setView('field-detail');
               else if (view === 'admin') setView('dashboard');
+              else if (view === 'add-farm') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
@@ -120,7 +155,17 @@ function App() {
             </a>
             <div className="text-white">
               <h1 className="text-sm font-bold leading-tight">GDD Tracker</h1>
-              <p className="text-[10px] opacity-70 mt-0.5">Growing Degree Days</p>
+              {/* Farm switcher */}
+              <FarmSwitcher
+                farms={farms}
+                currentFarmId={currentFarmId}
+                onFarmChange={(id) => {
+                  setCurrentFarmId(id);
+                  setSelectedFieldId(null);
+                  setView('dashboard');
+                }}
+                onAddFarm={() => setView('add-farm')}
+              />
             </div>
           </div>
         )}
@@ -164,16 +209,18 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
-              <button
-                onClick={() => {
-                  setSelectedFieldId(null);
-                  setView('add-field');
-                }}
-                className="agraria-btn-orange text-xs"
-                title="Add Field"
-              >
-                + Add Field
-              </button>
+              {currentFarm && (
+                <button
+                  onClick={() => {
+                    setSelectedFieldId(null);
+                    setView('add-field');
+                  }}
+                  className="agraria-btn-orange text-xs"
+                  title="Add Field"
+                >
+                  + Add Field
+                </button>
+              )}
             </>
           )}
           {view === 'field-detail' && selectedField && (
@@ -221,15 +268,33 @@ function App() {
       {/* Content */}
       <main className="p-[14px]">
         {view === 'admin' && <AdminPanel />}
+        {view === 'add-farm' && (
+          <FarmForm onSubmit={handleCreateFarm} onCancel={() => setView('dashboard')} />
+        )}
         {view === 'settings' && (
           <Settings
             onSaved={handleSettingsSaved}
             stations={stations}
             onLogout={handleLogout}
+            currentFarm={currentFarm}
+            onDeleteFarm={handleDeleteFarm}
           />
         )}
         {view === 'dashboard' && (
-          fieldsLoading ? (
+          farms.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-5xl mb-4">🌾</div>
+              <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--tx)' }}>
+                Welcome! Create your first farm
+              </h2>
+              <p className="text-xs mb-6" style={{ color: 'var(--tx3)' }}>
+                A farm groups your fields under a weather station. Place a pin on the map to auto-assign the nearest station.
+              </p>
+              <button onClick={() => setView('add-farm')} className="agraria-btn-primary">
+                + Create Your First Farm
+              </button>
+            </div>
+          ) : fieldsLoading ? (
             <div className="text-center py-12">
               <div className="text-3xl mb-3">🌽</div>
               <p className="text-xs" style={{ color: 'var(--tx3)' }}>Loading fields...</p>

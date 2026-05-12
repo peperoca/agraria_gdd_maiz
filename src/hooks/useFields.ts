@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Field } from '../types';
 import * as api from '../utils/api';
 
-export function useFields() {
+export function useFields(farmId?: number | null) {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,14 +14,16 @@ export function useFields() {
     }
     try {
       setLoading(true);
-      const serverFields = await api.getFields();
+      const serverFields = await api.getFields(farmId ?? undefined);
       setFields(
         serverFields.map((f) => ({
           id: f.id,
           name: f.name,
           sowingDate: f.sowingDate,
+          cropType: f.cropType ?? 'corn',
           stationMac: f.stationMac,
           stationName: f.stationName,
+          farmId: f.farmId,
           createdAt: f.createdAt,
         }))
       );
@@ -30,15 +32,15 @@ export function useFields() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [farmId]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   const add = useCallback(
-    async (data: { name: string; sowingDate: string; stationMac: string }) => {
-      const newField = await api.createField(data.name, data.sowingDate, data.stationMac);
+    async (data: { name: string; sowingDate: string; stationMac: string; cropType?: string; farmId?: number }) => {
+      const newField = await api.createField(data.name, data.sowingDate, data.stationMac, data.cropType, data.farmId);
       await refresh();
       return newField;
     },
@@ -46,7 +48,7 @@ export function useFields() {
   );
 
   const update = useCallback(
-    async (id: number, updates: { name?: string; sowingDate?: string }) => {
+    async (id: number, updates: { name?: string; sowingDate?: string; cropType?: string }) => {
       await api.updateField(id, updates);
       await refresh();
     },

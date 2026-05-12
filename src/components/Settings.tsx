@@ -1,102 +1,52 @@
-import { useState } from 'react';
-import { getSettings, saveSettings } from '../utils/storage';
 import type { StationInfo } from '../utils/api';
+import type { Farm } from '../types';
 
 interface SettingsProps {
   onSaved: () => void;
   stations: StationInfo[];
   onLogout: () => void;
+  currentFarm?: Farm | null;
+  onDeleteFarm?: () => void;
 }
 
-export function Settings({ onSaved, stations, onLogout }: SettingsProps) {
-  const [settings, setSettings] = useState(() => getSettings());
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    saveSettings(settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    onSaved();
-  };
-
+export function Settings({ onLogout, currentFarm, onDeleteFarm }: SettingsProps) {
   return (
     <div className="space-y-3">
-      <div className="agraria-card space-y-4">
-        <div className="sec-label">Weather Station</div>
-
-        {stations.length === 0 ? (
-          <div className="agraria-info-row">
-            <p className="text-xs" style={{ color: 'var(--it)' }}>
-              No weather stations assigned to your account. Contact your administrator.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: 'var(--tx2)' }}>Select Station</label>
-            <select
-              value={settings.stationMac}
-              onChange={(e) => {
-                const station = stations.find((s) => s.mac === e.target.value);
-                setSettings({
-                  stationMac: e.target.value,
-                  stationName: station?.name ?? e.target.value,
-                });
-              }}
-              className="agraria-input"
-            >
-              <option value="">Select a station...</option>
-              {stations.map((s) => (
-                <option key={s.mac} value={s.mac}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <button
-          onClick={handleSave}
-          disabled={!settings.stationMac}
-          className="agraria-btn-primary w-full"
-        >
-          {saved ? '✓ Saved!' : 'Save Settings'}
-        </button>
-      </div>
-
-      {/* Station info */}
-      {settings.stationMac && stations.length > 0 && (() => {
-        const current = stations.find((s) => s.mac === settings.stationMac);
-        if (!current) return null;
-        return (
-          <div className="agraria-card">
-            <div className="sec-label">Station Info</div>
-            <div className="space-y-1.5 text-xs" style={{ color: 'var(--tx2)' }}>
-              <div className="flex justify-between">
-                <span>Name</span>
-                <span style={{ color: 'var(--tx)' }}>{current.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>MAC</span>
-                <span style={{ color: 'var(--tx)' }} className="font-mono text-[11px]">{current.mac}</span>
-              </div>
-              {current.latitude !== 0 && (
-                <div className="flex justify-between">
-                  <span>Location</span>
-                  <span style={{ color: 'var(--tx)' }}>
-                    {current.latitude.toFixed(4)}, {current.longitude.toFixed(4)}
-                  </span>
-                </div>
-              )}
-              {current.elevationM > 0 && (
-                <div className="flex justify-between">
-                  <span>Elevation</span>
-                  <span style={{ color: 'var(--tx)' }}>{current.elevationM}m</span>
-                </div>
-              )}
+      {/* Current Farm info */}
+      {currentFarm && (
+        <div className="agraria-card">
+          <div className="sec-label">Current Farm</div>
+          <div className="space-y-1.5 text-xs" style={{ color: 'var(--tx2)' }}>
+            <div className="flex justify-between">
+              <span>Name</span>
+              <span style={{ color: 'var(--tx)' }}>{currentFarm.name}</span>
             </div>
+            {currentFarm.stationName && (
+              <div className="flex justify-between">
+                <span>Station</span>
+                <span style={{ color: 'var(--tx)' }}>{currentFarm.stationName}</span>
+              </div>
+            )}
+            {currentFarm.latitude !== null && currentFarm.longitude !== null && (
+              <div className="flex justify-between">
+                <span>Location</span>
+                <span style={{ color: 'var(--tx)' }}>
+                  {currentFarm.latitude.toFixed(4)}, {currentFarm.longitude.toFixed(4)}
+                </span>
+              </div>
+            )}
           </div>
-        );
-      })()}
+          {onDeleteFarm && (
+            <button
+              onClick={onDeleteFarm}
+              className="mt-3 text-[11px] px-3 py-1.5 rounded-[var(--r)] border"
+              style={{ borderColor: 'var(--dt)', color: 'var(--dt)', background: 'transparent' }}
+            >
+              Delete Farm
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Account */}
       <div className="agraria-card space-y-3">

@@ -1,38 +1,45 @@
 import { format, parseISO } from 'date-fns';
-import { CORN_STAGES, getCurrentStage, getNextStage } from '../utils/cornStages';
-import type { DailyGdd } from '../types';
+import { getCropConfig, getKeyStages, type CropType } from '../utils/cropConfig';
+import type { CornStage, DailyGdd } from '../types';
 
 interface GrowthStagesProps {
   cumulativeGdd: number;
   gddData?: DailyGdd[];
+  cropType?: CropType;
 }
-
-const KEY_STAGES = ['VE', 'V6', 'V12', 'VT', 'R1', 'R4', 'R6'];
 
 /**
  * For each stage, find the first day in gddData where cumulative >= stage.gdd.
- * Returns a Map from stage shortName to the date string (YYYY-MM-DD).
  */
-function buildStageDateMap(gddData: DailyGdd[]): Map<string, string> {
+function buildStageDateMap(gddData: DailyGdd[], stages: CornStage[]): Map<string, string> {
   const map = new Map<string, string>();
   if (gddData.length === 0) return map;
 
   let stageIdx = 0;
   for (const day of gddData) {
-    while (stageIdx < CORN_STAGES.length && day.cumulative >= CORN_STAGES[stageIdx].gdd) {
-      map.set(CORN_STAGES[stageIdx].shortName, day.date);
+    while (stageIdx < stages.length && day.cumulative >= stages[stageIdx].gdd) {
+      map.set(stages[stageIdx].shortName, day.date);
       stageIdx++;
     }
-    if (stageIdx >= CORN_STAGES.length) break;
+    if (stageIdx >= stages.length) break;
   }
   return map;
 }
 
-export function GrowthStages({ cumulativeGdd, gddData }: GrowthStagesProps) {
-  const currentStage = getCurrentStage(cumulativeGdd);
-  const nextStage = getNextStage(cumulativeGdd);
-  const keyStages = CORN_STAGES.filter((s) => KEY_STAGES.includes(s.shortName));
-  const stageDateMap = gddData ? buildStageDateMap(gddData) : new Map<string, string>();
+export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn' }: GrowthStagesProps) {
+  const config = getCropConfig(cropType);
+  const allStages = config.stages;
+  const keyStageNames = getKeyStages(cropType);
+  const keyStages = allStages.filter((s) => keyStageNames.includes(s.shortName));
+  const stageDateMap = gddData ? buildStageDateMap(gddData, allStages) : new Map<string, string>();
+
+  // Find current and next stage
+  let currentStage: CornStage | null = null;
+  let nextStage: CornStage | null = null;
+  for (const s of allStages) {
+    if (cumulativeGdd >= s.gdd) currentStage = s;
+    else { nextStage = s; break; }
+  }
 
   return (
     <div className="agraria-card space-y-3">
@@ -126,7 +133,7 @@ export function GrowthStages({ cumulativeGdd, gddData }: GrowthStagesProps) {
               </tr>
             </thead>
             <tbody>
-              {CORN_STAGES.map((stage) => {
+              {allStages.map((stage) => {
                 const isPast = cumulativeGdd >= stage.gdd;
                 const dateReached = stageDateMap.get(stage.shortName);
                 return (

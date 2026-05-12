@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain } from '../types';
-import { getCurrentStage, getProgressPercent, MATURITY_GDD } from '../utils/cornStages';
+import { getCropConfig } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 import { GddChart } from './GddChart';
 import { EtoChart } from './EtoChart';
@@ -12,25 +12,33 @@ interface FieldDetailProps {
 }
 
 export function FieldDetail({ field }: FieldDetailProps) {
+  const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { loading, error, fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [etoData, setEtoData] = useState<DailyEto[] | null>(null);
   const [rainData, setRainData] = useState<DailyRain[] | null>(null);
 
   useEffect(() => {
-    fetchData(field.sowingDate, field.stationMac)
+    fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
       .then((result) => {
         setGddData(result.gdd);
         setEtoData(result.eto);
         setRainData(result.rain);
       })
       .catch(() => {});
-  }, [field.sowingDate, field.stationMac, fetchData]);
+  }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF]);
 
   const latestGdd = gddData && gddData.length > 0 ? gddData[gddData.length - 1] : null;
   const cumulative = latestGdd?.cumulative ?? 0;
-  const stage = getCurrentStage(cumulative);
-  const progress = getProgressPercent(cumulative);
+
+  // Use crop-specific stages
+  const stages = cropConfig.stages;
+  let currentStage = null;
+  for (const s of stages) {
+    if (cumulative >= s.gdd) currentStage = s;
+    else break;
+  }
+  const progress = Math.min(100, Math.round((cumulative / cropConfig.maturityGdd) * 100));
   const daysSinceSowing = differenceInDays(new Date(), parseISO(field.sowingDate));
   const hasRain = rainData && rainData.length > 0;
 
@@ -42,7 +50,7 @@ export function FieldDetail({ field }: FieldDetailProps) {
           <div>
             <h2 className="text-base font-bold" style={{ color: 'var(--tx)' }}>{field.name}</h2>
             <p className="text-xs" style={{ color: 'var(--tx2)' }}>
-              Sowed {format(parseISO(field.sowingDate), 'MMMM d, yyyy')} &middot; {daysSinceSowing} days ago
+              {cropConfig.label} &middot; Sowed {format(parseISO(field.sowingDate), 'MMMM d, yyyy')} &middot; {daysSinceSowing} days ago
             </p>
           </div>
         </div>
@@ -70,7 +78,7 @@ export function FieldDetail({ field }: FieldDetailProps) {
               <div>
                 <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Stage</div>
                 <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
-                  {stage?.shortName ?? '—'}
+                  {currentStage?.shortName ?? '—'}
                 </div>
               </div>
               <div>
@@ -87,7 +95,7 @@ export function FieldDetail({ field }: FieldDetailProps) {
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{progress}% to maturity</span>
-              <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{MATURITY_GDD} GDD</span>
+              <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{cropConfig.maturityGdd} GDD</span>
             </div>
           </>
         )}
@@ -102,7 +110,7 @@ export function FieldDetail({ field }: FieldDetailProps) {
       )}
 
       {/* Growth stages */}
-      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} />}
+      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={field.cropType ?? 'corn'} />}
 
       {/* Daily data table */}
       {gddData && gddData.length > 0 && (

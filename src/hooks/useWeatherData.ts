@@ -16,7 +16,7 @@ interface UseWeatherDataResult {
   loading: boolean;
   error: string | null;
   data: WeatherResult | null;
-  fetchData: (sowingDate: string, stationMac?: string) => Promise<WeatherResult>;
+  fetchData: (sowingDate: string, stationMac?: string, baseTempF?: number, upperCapF?: number | null) => Promise<WeatherResult>;
 }
 
 /**
@@ -64,7 +64,12 @@ export function useWeatherData(): UseWeatherDataResult {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<WeatherResult | null>(null);
 
-  const fetchData = useCallback(async (sowingDate: string, stationMac?: string): Promise<WeatherResult> => {
+  const fetchData = useCallback(async (
+    sowingDate: string,
+    stationMac?: string,
+    baseTempF: number = 50,
+    upperCapF: number | null = 86,
+  ): Promise<WeatherResult> => {
     setLoading(true);
     setError(null);
 
@@ -114,7 +119,7 @@ export function useWeatherData(): UseWeatherDataResult {
       const readings = toWeatherReadings(rawReadings);
       const rainReadings = toRainReadings(rawReadings);
 
-      const gddData = processWeatherData(readings, sowingDate);
+      const gddData = processWeatherData(readings, sowingDate, baseTempF, upperCapF);
       const etoData = processEtoData(readings, sowingDate);
       const rainData = processRainData(rainReadings, sowingDate);
 
@@ -122,7 +127,7 @@ export function useWeatherData(): UseWeatherDataResult {
       const earliestDate = readings.length > 0
         ? new Date(readings[0].dateutc).toISOString().split('T')[0]
         : sowingDate;
-      const allGddData = processWeatherData(readings, earliestDate);
+      const allGddData = processWeatherData(readings, earliestDate, baseTempF, upperCapF);
       const allEtoData = processEtoData(readings, earliestDate);
       const allRainData = processRainData(rainReadings, earliestDate);
       setCachedWeatherData(mac, allGddData, allEtoData, allRainData);
