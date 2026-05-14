@@ -18,9 +18,10 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 interface NdviChartProps {
   data: NdviReading[];
+  onDateClick?: (date: string) => void;
 }
 
-export function NdviChart({ data }: NdviChartProps) {
+export function NdviChart({ data, onDateClick }: NdviChartProps) {
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const green = '#2d8a4e';
@@ -62,6 +63,14 @@ export function NdviChart({ data }: NdviChartProps) {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' },
+    onClick: (_event, elements) => {
+      if (onDateClick && elements.length > 0) {
+        const idx = elements[0].index;
+        if (idx >= 0 && idx < sorted.length) {
+          onDateClick(sorted[idx].date);
+        }
+      }
+    },
     plugins: {
       legend: {
         display: true,
@@ -128,11 +137,14 @@ export function NdviChart({ data }: NdviChartProps) {
           </div>
         </div>
       )}
-      <div style={{ height: '240px' }}>
+      <div style={{ height: '240px', cursor: onDateClick ? 'pointer' : undefined }}>
         <Line data={chartData} options={options} />
       </div>
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        Sentinel-2 NDVI (green area). Kc = 1.25 x NDVI + 0.20 (Glenn et al.). Cloud-filtered scenes only.
+        Sentinel-2 NDVI (green area). Kc = 1.25 × NDVI + 0.20 (Glenn et al.). Cloud-filtered scenes only.
+        {onDateClick && (
+          <span style={{ color: 'var(--blue)' }}> Tap a point to view satellite imagery 🛰</span>
+        )}
       </p>
     </div>
   );

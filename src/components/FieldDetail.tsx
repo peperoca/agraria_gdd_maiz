@@ -15,9 +15,10 @@ import { GrowthStages } from './GrowthStages';
 
 interface FieldDetailProps {
   field: Field;
+  onNdviDateClick?: (date: string, ndviData: NdviReading[]) => void;
 }
 
-export function FieldDetail({ field }: FieldDetailProps) {
+export function FieldDetail({ field, onNdviDateClick }: FieldDetailProps) {
   const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { loading, error, fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
@@ -168,7 +169,12 @@ export function FieldDetail({ field }: FieldDetailProps) {
       )}
 
       {/* NDVI Chart */}
-      {ndviData && ndviData.length > 0 && <NdviChart data={ndviData} />}
+      {ndviData && ndviData.length > 0 && (
+        <NdviChart
+          data={ndviData}
+          onDateClick={field.polygon ? (date) => onNdviDateClick?.(date, ndviData) : undefined}
+        />
+      )}
 
       {/* Water Balance Chart (Rain vs ETc) */}
       {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (

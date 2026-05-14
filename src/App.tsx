@@ -7,13 +7,14 @@ import { Login } from './components/Login';
 import { AdminPanel } from './components/AdminPanel';
 import { FarmForm } from './components/FarmForm';
 import { FarmSwitcher } from './components/FarmSwitcher';
+import { NdviImageView } from './components/NdviImageView';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
 import type { Field, Farm, User, FieldPolygon } from './types';
 import type { CropType } from './utils/cropConfig';
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => isLoggedIn());
@@ -25,6 +26,8 @@ function App() {
   const [view, setView] = useState<View>('dashboard');
   const [selectedFieldId, setSelectedFieldId] = useState<number | null>(null);
   const [stations, setStations] = useState<StationInfo[]>([]);
+  const [ndviImageDate, setNdviImageDate] = useState<string | undefined>(undefined);
+  const [ndviDataForImage, setNdviDataForImage] = useState<import('./types').NdviReading[]>([]);
 
   const fetchFarms = useCallback(async () => {
     try {
@@ -130,7 +133,8 @@ function App() {
         {view !== 'dashboard' && view !== 'settings' ? (
           <button
             onClick={() => {
-              if (view === 'field-detail') setView('dashboard');
+              if (view === 'ndvi-image') setView('field-detail');
+              else if (view === 'field-detail') setView('dashboard');
               else if (view === 'edit-field') setView('field-detail');
               else if (view === 'admin') setView('dashboard');
               else if (view === 'add-farm') setView('dashboard');
@@ -328,7 +332,23 @@ function App() {
           />
         )}
         {view === 'field-detail' && selectedField && (
-          <FieldDetail field={selectedField} />
+          <FieldDetail
+            field={selectedField}
+            onNdviDateClick={(date, ndviData) => {
+              setNdviImageDate(date);
+              setNdviDataForImage(ndviData);
+              setView('ndvi-image');
+            }}
+          />
+        )}
+        {view === 'ndvi-image' && selectedField && ndviDataForImage.length > 0 && (
+          <NdviImageView
+            fieldId={selectedField.id}
+            fieldName={selectedField.name}
+            ndviData={ndviDataForImage}
+            initialDate={ndviImageDate}
+            onBack={() => setView('field-detail')}
+          />
         )}
       </main>
     </div>
