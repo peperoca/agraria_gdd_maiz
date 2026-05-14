@@ -88,11 +88,16 @@ if ($type === 'truecolor') {
 function setup() {
   return {
     input: [{ bands: ["B04", "B03", "B02"], units: "DN" }],
-    output: { bands: 3, sampleType: "AUTO" }
+    output: { bands: 3, sampleType: "UINT8" }
   };
 }
 function evaluatePixel(sample) {
-  return [sample.B04 * 3.5, sample.B03 * 3.5, sample.B02 * 3.5];
+  let gain = 3.5 / 10000;
+  return [
+    Math.min(255, Math.max(0, sample.B04 * gain * 255)),
+    Math.min(255, Math.max(0, sample.B03 * gain * 255)),
+    Math.min(255, Math.max(0, sample.B02 * gain * 255))
+  ];
 }
 SCRIPT;
 } else {
