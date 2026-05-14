@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Field, FieldPolygon } from '../types';
-import { CROP_CONFIGS, type CropType } from '../utils/cropConfig';
+import { CROP_DROPDOWN_OPTIONS, normalizeCropType, type CropType } from '../utils/cropConfig';
 import { PolygonMap } from './PolygonMap';
 
 interface FieldFormProps {
@@ -14,7 +14,7 @@ interface FieldFormProps {
 export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: FieldFormProps) {
   const [name, setName] = useState(field?.name ?? '');
   const [sowingDate, setSowingDate] = useState(field?.sowingDate ?? '');
-  const [cropType, setCropType] = useState<CropType>(field?.cropType ?? 'corn');
+  const [cropType, setCropType] = useState<CropType>(normalizeCropType(field?.cropType ?? 'corn'));
   const [polygon, setPolygon] = useState<FieldPolygon | null>(field?.polygon ?? null);
 
   const isEditing = !!field;
@@ -50,8 +50,12 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
             onChange={(e) => setCropType(e.target.value as CropType)}
             className="agraria-input"
           >
-            {(Object.entries(CROP_CONFIGS) as [CropType, typeof CROP_CONFIGS.corn][]).map(([key, cfg]) => (
-              <option key={key} value={key}>{cfg.label}</option>
+            {(['Corn', 'Soybean', 'Wheat'] as const).map((group) => (
+              <optgroup key={group} label={group}>
+                {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

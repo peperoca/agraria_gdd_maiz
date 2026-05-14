@@ -45,7 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     if (!$name) json_error('Field name is required');
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $sowingDate)) json_error('Invalid sowing date format');
-    if (!in_array($cropType, ['corn', 'soybean', 'wheat'])) json_error('Invalid crop type');
+    $validCropTypes = [
+        'corn', 'corn-short', 'corn-intermediate', 'corn-long',
+        'soybean', 'soybean-short', 'soybean-intermediate', 'soybean-long',
+        'wheat', 'wheat-short', 'wheat-intermediate', 'wheat-long',
+    ];
+    if (!in_array($cropType, $validCropTypes)) json_error('Invalid crop type');
 
     $polygon = array_key_exists('polygon', $body)
         ? ($body['polygon'] ? json_encode($body['polygon']) : null)

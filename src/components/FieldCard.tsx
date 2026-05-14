@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd } from '../types';
-import { getCropConfig } from '../utils/cropConfig';
+import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 
 interface FieldCardProps {
@@ -49,7 +49,7 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
       </div>
 
       <p className="text-xs mb-3" style={{ color: 'var(--tx2)' }}>
-        {CROP_EMOJI[field.cropType ?? 'corn']} {cropConfig.label} &middot; Sowed: {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
+        {CROP_EMOJI[getBaseCrop(field.cropType ?? 'corn')]} {cropConfig.label} &middot; Sowed: {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
       </p>
 
       {loading ? (

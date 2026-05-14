@@ -334,6 +334,7 @@ function App() {
         {view === 'field-detail' && selectedField && (
           <FieldDetail
             field={selectedField}
+            farmLatitude={currentFarm?.latitude ?? null}
             onNdviDateClick={(date, ndviData) => {
               setNdviImageDate(date);
               setNdviDataForImage(ndviData);

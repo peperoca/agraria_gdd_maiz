@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
-import { getCropConfig } from '../utils/cropConfig';
+import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 import { getNdviData } from '../utils/api';
 import { calculateETc } from '../utils/ndvi';
+import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
+import { calculateDaylength, getDayOfYear, getPhotoperiodStatus } from '../utils/photoperiod';
 import { exportFieldCsv } from '../utils/exportCsv';
 import { exportFieldPdf } from '../utils/exportPdf';
 import { GddChart } from './GddChart';
@@ -12,13 +14,17 @@ import { EtoChart } from './EtoChart';
 import { NdviChart } from './NdviChart';
 import { WaterBalanceChart } from './WaterBalanceChart';
 import { GrowthStages } from './GrowthStages';
+import { CropAlertBanner } from './CropAlertBanner';
+import { VernalizationCard } from './VernalizationCard';
+import { PhotoperiodCard } from './PhotoperiodCard';
 
 interface FieldDetailProps {
   field: Field;
+  farmLatitude?: number | null;
   onNdviDateClick?: (date: string, ndviData: NdviReading[]) => void;
 }
 
-export function FieldDetail({ field, onNdviDateClick }: FieldDetailProps) {
+export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetailProps) {
   const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { loading, error, fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
@@ -74,6 +80,29 @@ export function FieldDetail({ field, onNdviDateClick }: FieldDetailProps) {
   const progress = Math.min(100, Math.round((cumulative / cropConfig.maturityGdd) * 100));
   const daysSinceSowing = differenceInDays(new Date(), parseISO(field.sowingDate));
   const hasRain = rainData && rainData.length > 0;
+
+  // ── Crop-specific indicators ──
+  const baseCrop = getBaseCrop(field.cropType ?? 'corn');
+
+  // Wheat: vernalization
+  const vernAlert = baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget
+    ? (() => {
+        const vernData = calculateCumulativeVernalization(gddData);
+        const latest = vernData.length > 0 ? vernData[vernData.length - 1] : null;
+        const jointingGdd = cropConfig.stages.find((s) => s.shortName === 'SE')?.gdd ?? 600;
+        return latest ? getVernalizationStatus(latest.cumulativeVd, cropConfig.vernalizationTarget!, cumulative, jointingGdd) : null;
+      })()
+    : null;
+
+  // Soybean: photoperiod
+  const photoAlert = baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod
+    ? (() => {
+        const today = new Date().toISOString().slice(0, 10);
+        const doy = getDayOfYear(today);
+        const daylength = calculateDaylength(farmLatitude, doy);
+        return getPhotoperiodStatus(daylength, cropConfig.criticalPhotoperiod!);
+      })()
+    : null;
 
   return (
     <div className="space-y-3">
@@ -134,6 +163,10 @@ export function FieldDetail({ field, onNdviDateClick }: FieldDetailProps) {
         )}
       </div>
 
+      {/* Crop alerts */}
+      {vernAlert && <CropAlertBanner type={vernAlert.type} message={vernAlert.message} />}
+      {photoAlert && <CropAlertBanner type={photoAlert.type} message={photoAlert.message} />}
+
       {/* Export buttons */}
       {gddData && gddData.length > 0 && (
         <div className="flex gap-2">
@@ -183,6 +216,23 @@ export function FieldDetail({ field, onNdviDateClick }: FieldDetailProps) {
 
       {/* Growth stages */}
       {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={field.cropType ?? 'corn'} />}
+
+      {/* Wheat: Vernalization card */}
+      {baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget && (
+        <VernalizationCard gddData={gddData} target={cropConfig.vernalizationTarget} />
+      )}
+
+      {/* Soybean: Photoperiod + PTU card */}
+      {baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod && gddData && (
+        <PhotoperiodCard
+          latitude={farmLatitude}
+          sowingDate={field.sowingDate}
+          criticalPhotoperiod={cropConfig.criticalPhotoperiod}
+          cropLabel={cropConfig.maturityLabel}
+          gddData={gddData}
+          maturityPtu={cropConfig.maturityPtu}
+        />
+      )}
 
       {/* Daily data table */}
       {gddData && gddData.length > 0 && (
