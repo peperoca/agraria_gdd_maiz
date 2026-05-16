@@ -1,22 +1,57 @@
 import type { NdviReading, DailyEto, DailyETc } from '../types';
 
+export type KcFormula = 'linear' | 'nonlinear';
+
+// Non-linear formula parameters (Glenn et al. 2011)
+const NDVI_MIN = 0.15; // bare soil
+const NDVI_MAX = 0.85; // full canopy cover
+
 /**
- * Interpolate NDVI/Kc values linearly between satellite observations.
+ * Compute Kc from NDVI using the selected formula.
+ *
+ * Linear (Glenn et al.): Kc = 1.25 × NDVI + 0.20
+ * Non-linear (Glenn et al. 2011): Kc = 1 + (Kc_max − 1) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
+ */
+export function computeKc(ndvi: number, formula: KcFormula, kcMax: number): number {
+  if (formula === 'linear') {
+    const kc = 1.25 * ndvi + 0.20;
+    return Math.max(0, Math.min(1.4, kc));
+  }
+  // Non-linear (Glenn et al. 2011)
+  const ndviClamped = Math.max(NDVI_MIN, Math.min(NDVI_MAX, ndvi));
+  const ratio = (ndviClamped - NDVI_MIN) / (NDVI_MAX - NDVI_MIN);
+  const kc = 1 + (kcMax - 1) * ratio;
+  return Math.max(0, Math.min(kcMax, kc));
+}
+
+/**
+ * Recalculate Kc for all NDVI readings using the specified formula.
+ */
+export function recalculateKc(
+  ndviReadings: NdviReading[],
+  formula: KcFormula,
+  kcMax: number,
+): NdviReading[] {
+  return ndviReadings.map((r) => ({
+    ...r,
+    kc: Math.round(computeKc(r.ndviMean, formula, kcMax) * 10000) / 10000,
+  }));
+}
+
+/**
+ * Interpolate Kc values linearly between satellite observations.
  * Returns a Map from date string to interpolated Kc value.
  */
 export function interpolateKc(
   ndviReadings: NdviReading[],
-  dateRange: string[], // All dates we need Kc for
+  dateRange: string[],
 ): Map<string, number> {
   const kcMap = new Map<string, number>();
   if (ndviReadings.length === 0) return kcMap;
 
-  // Sort NDVI readings by date
   const sorted = [...ndviReadings].sort((a, b) => a.date.localeCompare(b.date));
 
-  // For each date in range, find surrounding NDVI observations and interpolate
   for (const date of dateRange) {
-    // Find bracketing observations
     let before: NdviReading | null = null;
     let after: NdviReading | null = null;
 
@@ -26,7 +61,6 @@ export function interpolateKc(
     }
 
     if (before && after && before.date !== after.date) {
-      // Linear interpolation
       const t1 = new Date(before.date).getTime();
       const t2 = new Date(after.date).getTime();
       const t = new Date(date).getTime();
@@ -34,10 +68,8 @@ export function interpolateKc(
       const kc = before.kc + fraction * (after.kc - before.kc);
       kcMap.set(date, Math.round(kc * 10000) / 10000);
     } else if (before) {
-      // Use last known Kc (extrapolate forward)
       kcMap.set(date, before.kc);
     } else if (after) {
-      // Use first known Kc (extrapolate backward)
       kcMap.set(date, after.kc);
     }
   }
@@ -47,7 +79,6 @@ export function interpolateKc(
 
 /**
  * Calculate daily ETc = ETo × Kc
- * Returns array of daily ETc with cumulative values.
  */
 export function calculateETc(
   etoData: DailyEto[],

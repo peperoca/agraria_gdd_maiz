@@ -23,6 +23,8 @@ export interface CropConfig {
   criticalPhotoperiod?: number;
   /** Soybean only: photothermal units target for maturity */
   maturityPtu?: number;
+  /** FAO-56 mid-season Kc for non-linear formula */
+  kcMax: number;
 }
 
 // ── Helper: scale stage GDD values proportionally ──
@@ -115,6 +117,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     upperCapF: 86,
     maturityGdd: 2200,
     stages: CORN_STAGES_SHORT,
+    kcMax: 1.20,
   },
   'corn-intermediate': {
     label: 'Corn — Intermediate',
@@ -124,6 +127,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     upperCapF: 86,
     maturityGdd: 2500,
     stages: CORN_STAGES_INTERMEDIATE,
+    kcMax: 1.20,
   },
   'corn-long': {
     label: 'Corn — Long',
@@ -133,6 +137,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     upperCapF: 86,
     maturityGdd: 2800,
     stages: CORN_STAGES_LONG,
+    kcMax: 1.20,
   },
   // bare alias → intermediate
   corn: {
@@ -143,6 +148,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     upperCapF: 86,
     maturityGdd: 2500,
     stages: CORN_STAGES_INTERMEDIATE,
+    kcMax: 1.20,
   },
 
   // ── Soybean ──
@@ -156,6 +162,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: SOYBEAN_STAGES_SHORT,
     criticalPhotoperiod: 13.5,
     maturityPtu: 26000,
+    kcMax: 1.15,
   },
   'soybean-intermediate': {
     label: 'Soybean — Intermediate (MG V-VI)',
@@ -167,6 +174,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: SOYBEAN_STAGES_INTERMEDIATE,
     criticalPhotoperiod: 13.0,
     maturityPtu: 31000,
+    kcMax: 1.15,
   },
   'soybean-long': {
     label: 'Soybean — Long (MG VII-VIII)',
@@ -178,6 +186,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: SOYBEAN_STAGES_LONG,
     criticalPhotoperiod: 12.5,
     maturityPtu: 36000,
+    kcMax: 1.15,
   },
   // bare alias → intermediate
   soybean: {
@@ -190,6 +199,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: SOYBEAN_STAGES_INTERMEDIATE,
     criticalPhotoperiod: 13.0,
     maturityPtu: 31000,
+    kcMax: 1.15,
   },
 
   // ── Wheat ──
@@ -202,6 +212,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 1500,
     stages: WHEAT_STAGES_SHORT,
     vernalizationTarget: 200,
+    kcMax: 1.15,
   },
   'wheat-intermediate': {
     label: 'Wheat — Intermediate',
@@ -212,6 +223,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 1750,
     stages: WHEAT_STAGES_INTERMEDIATE,
     vernalizationTarget: 500,
+    kcMax: 1.15,
   },
   'wheat-long': {
     label: 'Wheat — Long (Winter)',
@@ -222,6 +234,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 2100,
     stages: WHEAT_STAGES_LONG,
     vernalizationTarget: 1000,
+    kcMax: 1.15,
   },
   // bare alias → intermediate
   wheat: {
@@ -233,6 +246,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 1750,
     stages: WHEAT_STAGES_INTERMEDIATE,
     vernalizationTarget: 500,
+    kcMax: 1.15,
   },
 };
 

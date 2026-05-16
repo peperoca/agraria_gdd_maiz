@@ -4,7 +4,7 @@ import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 import { getNdviData } from '../utils/api';
-import { calculateETc } from '../utils/ndvi';
+import { calculateETc, recalculateKc, type KcFormula } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus } from '../utils/photoperiod';
 import { exportFieldCsv } from '../utils/exportCsv';
@@ -30,8 +30,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [etoData, setEtoData] = useState<DailyEto[] | null>(null);
   const [rainData, setRainData] = useState<DailyRain[] | null>(null);
-  const [ndviData, setNdviData] = useState<NdviReading[] | null>(null);
+  const [ndviDataRaw, setNdviDataRaw] = useState<NdviReading[] | null>(null);
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
+  const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
+
+  // Recompute Kc from raw NDVI using selected formula
+  const ndviData = ndviDataRaw
+    ? recalculateKc(ndviDataRaw, kcFormula, cropConfig.kcMax)
+    : null;
 
   useEffect(() => {
     fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
@@ -54,18 +60,18 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
           kc: r.kc,
           cloudPct: r.cloud_pct,
         }));
-        setNdviData(readings);
+        setNdviDataRaw(readings);
       })
-      .catch(() => setNdviData(null));
+      .catch(() => setNdviDataRaw(null));
   }, [field.id, field.polygon]);
 
-  // Calculate ETc when both ETo and NDVI are available
+  // Calculate ETc when both ETo and NDVI are available (recalculates on formula change)
   useEffect(() => {
     if (etoData && ndviData && ndviData.length > 0) {
       const etc = calculateETc(etoData, ndviData);
       setEtcData(etc);
     }
-  }, [etoData, ndviData]);
+  }, [etoData, ndviData, kcFormula]);
 
   const latestGdd = gddData && gddData.length > 0 ? gddData[gddData.length - 1] : null;
   const cumulative = latestGdd?.cumulative ?? 0;
@@ -201,12 +207,47 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         <EtoChart data={etoData} rainData={rainData ?? undefined} />
       )}
 
-      {/* NDVI Chart */}
+      {/* NDVI Chart + Kc Formula toggle */}
       {ndviData && ndviData.length > 0 && (
-        <NdviChart
-          data={ndviData}
-          onDateClick={field.polygon ? (date) => onNdviDateClick?.(date, ndviData) : undefined}
-        />
+        <>
+          <div className="agraria-card">
+            <div className="flex items-center justify-between">
+              <div className="sec-label" style={{ margin: 0 }}>Kc Formula</div>
+              <div className="flex rounded-[var(--r)] overflow-hidden border" style={{ borderColor: 'var(--bdr2)' }}>
+                <button
+                  onClick={() => setKcFormula('linear')}
+                  className="text-[10px] px-2.5 py-1 font-medium transition-colors"
+                  style={{
+                    background: kcFormula === 'linear' ? 'var(--blue)' : 'var(--surface)',
+                    color: kcFormula === 'linear' ? '#fff' : 'var(--tx3)',
+                  }}
+                >
+                  Linear
+                </button>
+                <button
+                  onClick={() => setKcFormula('nonlinear')}
+                  className="text-[10px] px-2.5 py-1 font-medium transition-colors"
+                  style={{
+                    background: kcFormula === 'nonlinear' ? 'var(--blue)' : 'var(--surface)',
+                    color: kcFormula === 'nonlinear' ? '#fff' : 'var(--tx3)',
+                  }}
+                >
+                  Non-linear
+                </button>
+              </div>
+            </div>
+            <p className="text-[9px] mt-1.5" style={{ color: 'var(--tx3)' }}>
+              {kcFormula === 'linear'
+                ? `Linear: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)`
+                : `Non-linear: Kc = 1 + (${cropConfig.kcMax.toFixed(2)} − 1) × [(NDVI − 0.15) / (0.85 − 0.15)] (Glenn et al. 2011, Kc_max FAO-56)`
+              }
+            </p>
+          </div>
+          <NdviChart
+            data={ndviData}
+            onDateClick={field.polygon ? (date) => onNdviDateClick?.(date, ndviData) : undefined}
+          />
+        </>
       )}
 
       {/* Water Balance Chart (Rain vs ETc) */}
