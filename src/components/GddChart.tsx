@@ -64,10 +64,19 @@ export function GddChart({ data, ptuData }: GddChartProps) {
           type: 'bar' as const,
           label: 'Daily GDD',
           data: data.map((d) => d.gdd),
-          backgroundColor: `${orange}80`,
-          borderColor: orange,
+          backgroundColor: data.map((d) =>
+            d.source && d.source !== 'station'
+              ? (d.source === 'carry_forward' ? `${orange}40` : `${purple}40`)
+              : `${orange}80`
+          ),
+          borderColor: data.map((d) =>
+            d.source && d.source !== 'station'
+              ? (d.source === 'carry_forward' ? orange : purple)
+              : orange
+          ),
           borderWidth: 1,
           borderRadius: 3,
+          borderDash: undefined,
           yAxisID: 'y',
           order: 3,
         },

@@ -13,7 +13,7 @@
  * Values are in inches; we convert to mm (* 25.4) for display.
  */
 
-import type { WeatherReading, DailyRain } from '../types';
+import type { WeatherReading, WeatherSource, DailyRain } from '../types';
 import { getStationLocalDate } from './stationTime';
 
 const INCHES_TO_MM = 25.4;
@@ -26,14 +26,23 @@ export function processRainData(readings: WeatherReading[], sowingDate: string):
 
   // Group readings by station local date (YYYY-MM-DD)
   const dailyMap = new Map<string, number>();
+  const sourceMap = new Map<string, WeatherSource>();
 
   for (const r of readings) {
     if (r.dailyrainin === undefined || r.dailyrainin === null) continue;
 
     const date = getStationLocalDate(r.dateutc);
     const current = dailyMap.get(date) ?? 0;
-    // dailyrainin is cumulative within the day, so max = daily total
     dailyMap.set(date, Math.max(current, r.dailyrainin));
+
+    // Track dominant source per day
+    const existing = sourceMap.get(date) || 'station';
+    const src = r.source || 'station';
+    if (src === 'fallback' || (src === 'carry_forward' && existing === 'station')) {
+      sourceMap.set(date, src);
+    } else if (!sourceMap.has(date)) {
+      sourceMap.set(date, src);
+    }
   }
 
   // Sort by date and filter from sowing date
@@ -53,6 +62,7 @@ export function processRainData(readings: WeatherReading[], sowingDate: string):
       date,
       rain: rainMm,
       cumulative: Math.round(cumulative * 100) / 100,
+      source: sourceMap.get(date),
     });
   }
 

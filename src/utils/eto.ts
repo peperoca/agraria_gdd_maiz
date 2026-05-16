@@ -1,4 +1,4 @@
-import type { WeatherReading, DailyWeatherSummary, DailyEto } from '../types';
+import type { WeatherReading, WeatherSource, DailyWeatherSummary, DailyEto } from '../types';
 import { getStationLocalDate } from './stationTime';
 
 /**
@@ -109,7 +109,7 @@ function extraterrestrialRadiation(latitude: number, dayOfYear: number): number 
 export function aggregateDailySummaries(
   readings: WeatherReading[],
   startDate: string
-): DailyWeatherSummary[] {
+): { summaries: DailyWeatherSummary[]; sourceByDate: Map<string, WeatherSource> } {
   const byDate = new Map<string, WeatherReading[]>();
 
   for (const r of readings) {
@@ -123,6 +123,7 @@ export function aggregateDailySummaries(
 
   const dates = Array.from(byDate.keys()).sort();
   const summaries: DailyWeatherSummary[] = [];
+  const sourceByDate = new Map<string, WeatherSource>();
 
   for (const date of dates) {
     const rds = byDate.get(date)!;
@@ -137,21 +138,31 @@ export function aggregateDailySummaries(
 
     const mean = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
 
+    // Determine dominant source for this day
+    const sources = rds.map((r) => r.source);
+    if (sources.some((s) => s === 'fallback')) {
+      sourceByDate.set(date, 'fallback');
+    } else if (sources.some((s) => s === 'carry_forward')) {
+      sourceByDate.set(date, 'carry_forward');
+    } else {
+      sourceByDate.set(date, 'station');
+    }
+
     summaries.push({
       date,
       tempMaxF: Math.max(...temps),
       tempMinF: Math.min(...temps),
       tempMeanF: mean(temps),
-      humidityMean: humidities.length > 0 ? mean(humidities) : 60,   // default 60% if missing
-      windSpeedMeanMph: winds.length > 0 ? mean(winds) : 2,          // default 2 mph
-      solarRadiationMeanWm2: solars.length > 0 ? mean(solars) : 150, // default
+      humidityMean: humidities.length > 0 ? mean(humidities) : 60,
+      windSpeedMeanMph: winds.length > 0 ? mean(winds) : 2,
+      solarRadiationMeanWm2: solars.length > 0 ? mean(solars) : 150,
       pressureMeanInHg: pressures.length > 0 ? mean(pressures) : 29.92,
       dewPointMeanF: dewPoints.length > 0 ? mean(dewPoints) : 50,
       readingCount: rds.length,
     });
   }
 
-  return summaries;
+  return { summaries, sourceByDate };
 }
 
 // ── Main ETo calculation ──
@@ -166,7 +177,8 @@ export function aggregateDailySummaries(
 export function calculateDailyEto(
   summaries: DailyWeatherSummary[],
   latitude: number = -34.5,
-  elevation: number = 50
+  elevation: number = 50,
+  sourceByDate?: Map<string, WeatherSource>,
 ): DailyEto[] {
   const results: DailyEto[] = [];
   let cumulative = 0;
@@ -231,6 +243,7 @@ export function calculateDailyEto(
       date: day.date,
       eto,
       cumulative: Math.round(cumulative * 100) / 100,
+      source: sourceByDate?.get(day.date),
     });
   }
 
@@ -253,6 +266,6 @@ export function processEtoData(
   latitude?: number,
   elevation?: number
 ): DailyEto[] {
-  const summaries = aggregateDailySummaries(readings, startDate);
-  return calculateDailyEto(summaries, latitude, elevation);
+  const { summaries, sourceByDate } = aggregateDailySummaries(readings, startDate);
+  return calculateDailyEto(summaries, latitude, elevation, sourceByDate);
 }

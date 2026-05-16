@@ -1,4 +1,4 @@
-import type { WeatherReading, HourlyTemp, DailyGdd } from '../types';
+import type { WeatherReading, WeatherSource, HourlyTemp, DailyGdd } from '../types';
 import { getStationLocalDate, getStationLocalHour } from './stationTime';
 
 const DEFAULT_BASE_TEMP = 50; // °F
@@ -19,11 +19,27 @@ export function hourlyGddContribution(
 }
 
 /**
- * Group raw 5-minute weather readings into hourly averages per day.
+ * Determine the dominant source for a set of readings.
+ * If any reading is non-station, the day is considered estimated.
  */
-export function groupReadingsToHourly(readings: WeatherReading[]): HourlyTemp[] {
-  // Group by date + hour
+function dominantSource(sources: (WeatherSource | undefined)[]): WeatherSource {
+  const counts: Record<string, number> = {};
+  for (const s of sources) {
+    const key = s || 'station';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  if (counts['fallback'] > 0) return 'fallback';
+  if (counts['carry_forward'] > 0) return 'carry_forward';
+  return 'station';
+}
+
+/**
+ * Group raw 5-minute weather readings into hourly averages per day.
+ * Also tracks source per date for downstream use.
+ */
+export function groupReadingsToHourly(readings: WeatherReading[]): { hourlyTemps: HourlyTemp[]; sourceByDate: Map<string, WeatherSource> } {
   const groups = new Map<string, number[]>();
+  const sourcesByDate = new Map<string, (WeatherSource | undefined)[]>();
 
   for (const r of readings) {
     if (r.tempf == null || isNaN(r.tempf)) continue;
@@ -35,6 +51,9 @@ export function groupReadingsToHourly(readings: WeatherReading[]): HourlyTemp[] 
       groups.set(key, []);
     }
     groups.get(key)!.push(r.tempf);
+
+    if (!sourcesByDate.has(dateStr)) sourcesByDate.set(dateStr, []);
+    sourcesByDate.get(dateStr)!.push(r.source);
   }
 
   const hourlyTemps: HourlyTemp[] = [];
@@ -48,13 +67,17 @@ export function groupReadingsToHourly(readings: WeatherReading[]): HourlyTemp[] 
     });
   }
 
-  // Sort by date then hour
   hourlyTemps.sort((a, b) => {
     const dateCmp = a.date.localeCompare(b.date);
     return dateCmp !== 0 ? dateCmp : a.hour - b.hour;
   });
 
-  return hourlyTemps;
+  const sourceByDate = new Map<string, WeatherSource>();
+  for (const [date, sources] of sourcesByDate) {
+    sourceByDate.set(date, dominantSource(sources));
+  }
+
+  return { hourlyTemps, sourceByDate };
 }
 
 /**
@@ -68,6 +91,7 @@ export function calculateDailyGdd(
   sowingDate: string,
   baseTemp: number = DEFAULT_BASE_TEMP,
   upperCap: number | null = DEFAULT_UPPER_CAP,
+  sourceByDate?: Map<string, WeatherSource>,
 ): DailyGdd[] {
   // Group hourly temps by date
   const byDate = new Map<string, HourlyTemp[]>();
@@ -116,6 +140,7 @@ export function calculateDailyGdd(
       gdd: Math.round(dailyGdd * 100) / 100,
       cumulative: Math.round(cumulative * 100) / 100,
       hourlyTemps: filledTemps.map((t) => (t !== null ? Math.round(t * 10) / 10 : 0)),
+      source: sourceByDate?.get(date),
     });
   }
 
@@ -176,6 +201,6 @@ export function processWeatherData(
   baseTemp: number = DEFAULT_BASE_TEMP,
   upperCap: number | null = DEFAULT_UPPER_CAP,
 ): DailyGdd[] {
-  const hourlyTemps = groupReadingsToHourly(readings);
-  return calculateDailyGdd(hourlyTemps, sowingDate, baseTemp, upperCap);
+  const { hourlyTemps, sourceByDate } = groupReadingsToHourly(readings);
+  return calculateDailyGdd(hourlyTemps, sowingDate, baseTemp, upperCap, sourceByDate);
 }

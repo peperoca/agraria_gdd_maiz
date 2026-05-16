@@ -25,6 +25,8 @@ export interface Farm {
   createdAt: string;
 }
 
+export type WeatherSource = 'station' | 'carry_forward' | 'fallback';
+
 export interface WeatherReading {
   dateutc: number;        // Unix timestamp ms
   tempf: number;          // Outdoor temperature °F
@@ -36,6 +38,7 @@ export interface WeatherReading {
   dailyrainin?: number;   // Daily rain accumulation (inches, resets at midnight)
   hourlyrainin?: number;  // Hourly rain (inches)
   date: string;           // ISO date string from API
+  source?: WeatherSource; // Data origin: real station, carry-forward, or fallback
 }
 
 export interface HourlyTemp {
@@ -49,18 +52,21 @@ export interface DailyGdd {
   gdd: number;     // Daily GDD
   cumulative: number; // Cumulative GDD from sowing
   hourlyTemps: number[]; // 24 hourly avg temps for detail view
+  source?: WeatherSource; // Dominant source for this day's readings
 }
 
 export interface DailyEto {
   date: string;       // YYYY-MM-DD
   eto: number;        // Daily ETo (mm/day)
   cumulative: number; // Cumulative ETo (mm)
+  source?: WeatherSource;
 }
 
 export interface DailyRain {
   date: string;       // YYYY-MM-DD
   rain: number;       // Daily rainfall (mm)
   cumulative: number; // Cumulative rainfall (mm)
+  source?: WeatherSource;
 }
 
 export interface DailyWeatherSummary {

@@ -67,8 +67,12 @@ export function EtoChart({ data, rainData }: EtoChartProps) {
         type: 'bar' as const,
         label: 'Daily ETo (mm)',
         data: data.map((d) => d.eto),
-        backgroundColor: `${blueM}80`,
-        borderColor: blueM,
+        backgroundColor: data.map((d) =>
+          d.source && d.source !== 'station' ? `${blueM}40` : `${blueM}80`
+        ),
+        borderColor: data.map((d) =>
+          d.source && d.source !== 'station' ? `${blueM}90` : blueM
+        ),
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'yEto',

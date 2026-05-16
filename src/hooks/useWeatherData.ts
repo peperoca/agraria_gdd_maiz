@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { DailyGdd, DailyEto, DailyRain, WeatherReading } from '../types';
+import type { DailyGdd, DailyEto, DailyRain, WeatherReading, WeatherSource } from '../types';
 import { processWeatherData } from '../utils/gdd';
 import { processEtoData } from '../utils/eto';
 import { processRainData } from '../utils/rain';
@@ -12,11 +12,13 @@ interface WeatherResult {
   rain: DailyRain[];
 }
 
+export type GapFillPreference = 'carry_forward' | 'fallback';
+
 interface UseWeatherDataResult {
   loading: boolean;
   error: string | null;
   data: WeatherResult | null;
-  fetchData: (sowingDate: string, stationMac?: string, baseTempF?: number, upperCapF?: number | null) => Promise<WeatherResult>;
+  fetchData: (sowingDate: string, stationMac?: string, baseTempF?: number, upperCapF?: number | null, gapPref?: GapFillPreference) => Promise<WeatherResult>;
 }
 
 /**
@@ -38,6 +40,7 @@ function toWeatherReadings(raw: WeatherReadingRaw[]): WeatherReading[] {
       dailyrainin: r.dailyrainin ?? undefined,
       hourlyrainin: r.hourlyrainin ?? undefined,
       date: r.date_iso,
+      source: (r.source as WeatherSource) ?? 'station',
     }));
 }
 
@@ -56,7 +59,47 @@ function toRainReadings(raw: WeatherReadingRaw[]): WeatherReading[] {
       dailyrainin: r.dailyrainin ?? undefined,
       hourlyrainin: r.hourlyrainin ?? undefined,
       date: r.date_iso,
+      source: (r.source as WeatherSource) ?? 'station',
     }));
+}
+
+/**
+ * Filter readings by source preference.
+ * For gap days (where source !== 'station'), only keep the preferred source type.
+ * Real station data always passes through.
+ */
+function filterBySourcePreference(
+  raw: WeatherReadingRaw[],
+  preference: 'carry_forward' | 'fallback',
+): WeatherReadingRaw[] {
+  // Group readings by date to identify gap days
+  const byDate = new Map<string, WeatherReadingRaw[]>();
+  for (const r of raw) {
+    const date = new Date(r.dateutc).toISOString().slice(0, 10);
+    const arr = byDate.get(date) ?? [];
+    arr.push(r);
+    byDate.set(date, arr);
+  }
+
+  const result: WeatherReadingRaw[] = [];
+  for (const [, readings] of byDate) {
+    const hasStation = readings.some((r) => !r.source || r.source === 'station');
+    if (hasStation) {
+      // Real data day — only keep station readings
+      result.push(...readings.filter((r) => !r.source || r.source === 'station'));
+    } else {
+      // Gap day — keep preferred source, fall back to whatever is available
+      const preferred = readings.filter((r) => r.source === preference);
+      if (preferred.length > 0) {
+        result.push(...preferred);
+      } else {
+        // Use whatever gap-fill is available
+        result.push(...readings);
+      }
+    }
+  }
+
+  return result.sort((a, b) => a.dateutc - b.dateutc);
 }
 
 export function useWeatherData(): UseWeatherDataResult {
@@ -69,6 +112,7 @@ export function useWeatherData(): UseWeatherDataResult {
     stationMac?: string,
     baseTempF: number = 50,
     upperCapF: number | null = 86,
+    gapPref: GapFillPreference = 'carry_forward',
   ): Promise<WeatherResult> => {
     setLoading(true);
     setError(null);
@@ -81,8 +125,8 @@ export function useWeatherData(): UseWeatherDataResult {
         throw new Error('No weather station selected. Please choose a station in Settings.');
       }
 
-      // Check cache first
-      const cached = getCachedWeatherData(mac);
+      // Check cache first (skip if non-default gap preference — cache isn't source-aware)
+      const cached = gapPref === 'carry_forward' ? getCachedWeatherData(mac) : null;
       if (cached && cached.gdd.length > 0) {
         const firstDate = cached.gdd[0].date;
         if (firstDate <= sowingDate) {
@@ -114,10 +158,11 @@ export function useWeatherData(): UseWeatherDataResult {
         }
       }
 
-      // Fetch from cPanel backend — single request, all data is in the DB
-      const rawReadings = await getWeatherData(mac, sowingDate);
-      const readings = toWeatherReadings(rawReadings);
-      const rainReadings = toRainReadings(rawReadings);
+      // Fetch from cPanel backend — single request, all data + gap-fills
+      const allRaw = await getWeatherData(mac, sowingDate);
+      const filteredRaw = filterBySourcePreference(allRaw, gapPref);
+      const readings = toWeatherReadings(filteredRaw);
+      const rainReadings = toRainReadings(filteredRaw);
 
       const gddData = processWeatherData(readings, sowingDate, baseTempF, upperCapF);
       const etoData = processEtoData(readings, sowingDate);

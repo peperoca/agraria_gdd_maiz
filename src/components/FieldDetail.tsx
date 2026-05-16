@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
-import { useWeatherData } from '../hooks/useWeatherData';
+import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
 import { getNdviData } from '../utils/api';
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
@@ -33,6 +33,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [ndviDataRaw, setNdviDataRaw] = useState<NdviReading[] | null>(null);
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
   const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
+  const [gapPref, setGapPref] = useState<GapFillPreference>('carry_forward');
 
   const kcParams: KcParams = useMemo(
     () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
@@ -51,14 +52,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const ndviData = kcFormula === 'linear' ? ndviDataLinear : ndviDataNonlinear;
 
   useEffect(() => {
-    fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
+    fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF, gapPref)
       .then((result) => {
         setGddData(result.gdd);
         setEtoData(result.eto);
         setRainData(result.rain);
       })
       .catch(() => {});
-  }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF]);
+  }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF, gapPref]);
 
   // Fetch NDVI data if field has polygon
   useEffect(() => {
@@ -187,6 +188,42 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
           </>
         )}
       </div>
+
+      {/* Gap-fill source toggle — show when estimated data exists */}
+      {gddData && gddData.some((d) => d.source && d.source !== 'station') && (
+        <div className="agraria-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="sec-label" style={{ margin: 0 }}>Data Source</div>
+              <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>
+                {gddData.filter((d) => d.source && d.source !== 'station').length} day(s) with estimated data
+              </p>
+            </div>
+            <div className="flex rounded-[var(--r)] overflow-hidden border" style={{ borderColor: 'var(--bdr2)' }}>
+              <button
+                onClick={() => setGapPref('carry_forward')}
+                className="text-[10px] px-2.5 py-1 font-medium transition-colors"
+                style={{
+                  background: gapPref === 'carry_forward' ? 'var(--orange)' : 'var(--surface)',
+                  color: gapPref === 'carry_forward' ? '#fff' : 'var(--tx3)',
+                }}
+              >
+                Carry Forward
+              </button>
+              <button
+                onClick={() => setGapPref('fallback')}
+                className="text-[10px] px-2.5 py-1 font-medium transition-colors"
+                style={{
+                  background: gapPref === 'fallback' ? 'var(--orange)' : 'var(--surface)',
+                  color: gapPref === 'fallback' ? '#fff' : 'var(--tx3)',
+                }}
+              >
+                Nearest Station
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Crop alerts */}
       {vernAlert && <CropAlertBanner type={vernAlert.type} message={vernAlert.message} />}
@@ -330,9 +367,23 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                     const rainDay = rainData?.find((r) => r.date === d.date);
                     const etcDay = etcData?.find((e) => e.date === d.date);
                     return (
-                      <tr key={d.date} style={{ borderBottom: '0.5px solid var(--bdr)' }}>
+                      <tr key={d.date} style={{ borderBottom: '0.5px solid var(--bdr)', opacity: d.source && d.source !== 'station' ? 0.7 : 1 }}>
                         <td className="py-1.5 px-2" style={{ color: 'var(--tx)' }}>
-                          {format(parseISO(d.date), 'MMM d')}
+                          <span className="inline-flex items-center gap-1">
+                            {d.source && d.source !== 'station' && (
+                              <span
+                                title={d.source === 'carry_forward' ? 'Carried forward' : 'Fallback station'}
+                                style={{
+                                  display: 'inline-block',
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  background: d.source === 'carry_forward' ? 'var(--orange)' : '#a855f7',
+                                }}
+                              />
+                            )}
+                            {format(parseISO(d.date), 'MMM d')}
+                          </span>
                         </td>
                         <td className="py-1.5 px-2 text-right font-medium" style={{ color: 'var(--orange)' }}>
                           +{d.gdd.toFixed(1)}

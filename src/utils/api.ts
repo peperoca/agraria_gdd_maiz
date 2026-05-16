@@ -189,6 +189,8 @@ export async function deleteField(id: number): Promise<{ success: boolean }> {
 
 // --- Weather Data ---
 
+export type WeatherSource = 'station' | 'carry_forward' | 'fallback';
+
 export interface WeatherReadingRaw {
   dateutc: number;
   tempf: number | null;
@@ -200,6 +202,16 @@ export interface WeatherReadingRaw {
   dailyrainin: number | null;
   hourlyrainin: number | null;
   date_iso: string;
+  source?: WeatherSource;
+}
+
+export interface WeatherGapInfo {
+  gap_date: string;
+  has_carry_forward: boolean;
+  has_fallback: boolean;
+  fallback_station_name: string | null;
+  fallback_distance_km: number | null;
+  resolved_at: string | null;
 }
 
 export async function getWeatherData(
@@ -210,6 +222,10 @@ export async function getWeatherData(
   const params = new URLSearchParams({ mac: stationMac, from });
   if (to) params.set('to', to);
   return apiFetch<WeatherReadingRaw[]>(`weather.php?${params}`);
+}
+
+export async function getWeatherGaps(stationMac: string): Promise<WeatherGapInfo[]> {
+  return apiFetch<WeatherGapInfo[]>(`weather-gaps.php?mac=${encodeURIComponent(stationMac)}`);
 }
 
 // --- NDVI ---
