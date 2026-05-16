@@ -215,7 +215,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       )}
 
       {/* Growth stages */}
-      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={field.cropType ?? 'corn'} />}
+      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} />}
 
       {/* Wheat: Vernalization card */}
       {baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget && (

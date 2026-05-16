@@ -7,7 +7,7 @@ export interface Field {
   id: number;
   name: string;
   sowingDate: string; // ISO date string YYYY-MM-DD
-  cropType: 'corn' | 'soybean' | 'wheat';
+  cropType: string;
   polygon: FieldPolygon | null;
   stationMac: string;
   stationName?: string;
