@@ -1,11 +1,13 @@
 import { format, parseISO } from 'date-fns';
-import { getCropConfig, getKeyStages, type CropType } from '../utils/cropConfig';
+import { getCropConfig, getKeyStages, getBaseCrop, type CropType } from '../utils/cropConfig';
 import type { CornStage, DailyGdd } from '../types';
+import type { PtuDay } from '../utils/photoperiod';
 
 interface GrowthStagesProps {
   cumulativeGdd: number;
   gddData?: DailyGdd[];
   cropType?: CropType;
+  ptuData?: PtuDay[] | null;
 }
 
 /**
@@ -26,19 +28,49 @@ function buildStageDateMap(gddData: DailyGdd[], stages: CornStage[]): Map<string
   return map;
 }
 
-export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn' }: GrowthStagesProps) {
+function buildPtuStageDateMap(ptuData: PtuDay[], stages: CornStage[]): Map<string, string> {
+  const map = new Map<string, string>();
+  if (ptuData.length === 0) return map;
+
+  let stageIdx = 0;
+  for (const day of ptuData) {
+    while (stageIdx < stages.length && stages[stageIdx].ptu != null && day.cumulativePtu >= stages[stageIdx].ptu!) {
+      map.set(stages[stageIdx].shortName, day.date);
+      stageIdx++;
+    }
+    if (stageIdx >= stages.length) break;
+  }
+  return map;
+}
+
+export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuData }: GrowthStagesProps) {
   const config = getCropConfig(cropType);
   const allStages = config.stages;
   const keyStageNames = getKeyStages(cropType);
   const keyStages = allStages.filter((s) => keyStageNames.includes(s.shortName));
   const stageDateMap = gddData ? buildStageDateMap(gddData, allStages) : new Map<string, string>();
 
-  // Find current and next stage
+  const isSoybean = getBaseCrop(cropType) === 'soybean';
+  const hasPtu = isSoybean && ptuData && ptuData.length > 0 && allStages.some((s) => s.ptu != null);
+  const ptuStageDateMap = hasPtu ? buildPtuStageDateMap(ptuData!, allStages) : new Map<string, string>();
+  const cumulativePtu = hasPtu ? ptuData![ptuData!.length - 1].cumulativePtu : 0;
+
+  // Find current and next stage (GDD-based)
   let currentStage: CornStage | null = null;
   let nextStage: CornStage | null = null;
   for (const s of allStages) {
     if (cumulativeGdd >= s.gdd) currentStage = s;
     else { nextStage = s; break; }
+  }
+
+  // PTU-based current stage
+  let currentStagePtu: CornStage | null = null;
+  let nextStagePtu: CornStage | null = null;
+  if (hasPtu) {
+    for (const s of allStages) {
+      if (s.ptu != null && cumulativePtu >= s.ptu) currentStagePtu = s;
+      else if (s.ptu != null && !nextStagePtu) { nextStagePtu = s; break; }
+    }
   }
 
   return (
@@ -104,15 +136,40 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn' }: Grow
         </div>
       )}
 
+      {/* PTU-based current stage (soybean only) */}
+      {hasPtu && currentStagePtu && currentStagePtu.shortName !== currentStage?.shortName && (
+        <div className="agraria-info-row">
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--orange)', color: '#fff' }}>PTU</span>
+            <span className="text-xs font-semibold" style={{ color: 'var(--it)' }}>
+              {currentStagePtu.shortName} — {currentStagePtu.name}
+            </span>
+            {ptuStageDateMap.get(currentStagePtu.shortName) && (
+              <span className="text-[10px]" style={{ color: 'var(--it)', opacity: 0.6 }}>
+                reached {format(parseISO(ptuStageDateMap.get(currentStagePtu.shortName)!), 'MMM d')}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px]" style={{ color: 'var(--it)', opacity: 0.75 }}>
+            {currentStagePtu.description}
+          </p>
+        </div>
+      )}
+
       {/* Next milestone */}
       {nextStage && (
         <div className="rounded-[var(--r)] p-2.5" style={{ background: 'var(--wb)' }}>
           <p className="text-[11px]" style={{ color: 'var(--wt)' }}>
-            <span className="font-semibold">Next:</span> {nextStage.shortName} — {nextStage.name} at {nextStage.gdd} GDD
+            <span className="font-semibold">Next (GDD):</span> {nextStage.shortName} — {nextStage.name} at {nextStage.gdd} GDD
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--wt)', opacity: 0.75 }}>
             {Math.round(nextStage.gdd - cumulativeGdd)} GDD remaining
           </p>
+          {hasPtu && nextStagePtu && (
+            <p className="text-[11px] mt-1" style={{ color: 'var(--wt)', opacity: 0.75 }}>
+              <span className="font-semibold">Next (PTU):</span> {nextStagePtu.shortName} at {nextStagePtu.ptu!.toLocaleString()} PTU — {Math.round(nextStagePtu.ptu! - cumulativePtu).toLocaleString()} remaining
+            </p>
+          )}
         </div>
       )}
 
@@ -129,28 +186,42 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn' }: Grow
                 <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Stage</th>
                 <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Name</th>
                 <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>GDD</th>
+                {hasPtu && <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>PTU</th>}
                 <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Date</th>
+                {hasPtu && <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>PTU Date</th>}
               </tr>
             </thead>
             <tbody>
               {allStages.map((stage) => {
-                const isPast = cumulativeGdd >= stage.gdd;
+                const isPastGdd = cumulativeGdd >= stage.gdd;
+                const isPastPtu = hasPtu && stage.ptu != null && cumulativePtu >= stage.ptu;
                 const dateReached = stageDateMap.get(stage.shortName);
+                const ptuDateReached = ptuStageDateMap.get(stage.shortName);
                 return (
                   <tr
                     key={stage.shortName}
                     style={{
                       borderBottom: '0.5px solid var(--bdr)',
-                      color: isPast ? 'var(--it)' : 'var(--tx3)',
+                      color: isPastGdd ? 'var(--it)' : 'var(--tx3)',
                     }}
                   >
-                    <td className="py-1 px-1.5 text-center">{isPast ? '✓' : '○'}</td>
+                    <td className="py-1 px-1.5 text-center">{isPastGdd ? '✓' : '○'}</td>
                     <td className="py-1 px-1.5 font-medium">{stage.shortName}</td>
                     <td className="py-1 px-1.5">{stage.name}</td>
                     <td className="py-1 px-1.5 text-right">{stage.gdd}</td>
-                    <td className="py-1 px-1.5 text-right" style={{ color: isPast ? 'var(--blue)' : 'var(--tx3)' }}>
+                    {hasPtu && (
+                      <td className="py-1 px-1.5 text-right" style={{ color: isPastPtu ? 'var(--orange)' : 'var(--tx3)' }}>
+                        {stage.ptu != null ? stage.ptu.toLocaleString() : '—'}
+                      </td>
+                    )}
+                    <td className="py-1 px-1.5 text-right" style={{ color: isPastGdd ? 'var(--blue)' : 'var(--tx3)' }}>
                       {dateReached ? format(parseISO(dateReached), 'MMM d') : '—'}
                     </td>
+                    {hasPtu && (
+                      <td className="py-1 px-1.5 text-right" style={{ color: isPastPtu ? 'var(--orange)' : 'var(--tx3)' }}>
+                        {ptuDateReached ? format(parseISO(ptuDateReached), 'MMM d') : '—'}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

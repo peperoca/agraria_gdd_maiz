@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData } from '../hooks/useWeatherData';
 import { getNdviData } from '../utils/api';
-import { calculateETc, recalculateKc, type KcFormula } from '../utils/ndvi';
+import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
-import { calculateDaylength, getDayOfYear, getPhotoperiodStatus } from '../utils/photoperiod';
+import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
 import { exportFieldCsv } from '../utils/exportCsv';
 import { exportFieldPdf } from '../utils/exportPdf';
 import { GddChart } from './GddChart';
@@ -34,10 +34,21 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
   const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
 
-  // Recompute Kc from raw NDVI using selected formula
-  const ndviData = ndviDataRaw
-    ? recalculateKc(ndviDataRaw, kcFormula, cropConfig.kcMax)
-    : null;
+  const kcParams: KcParams = useMemo(
+    () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
+    [cropConfig.kcMax, cropConfig.kcMin, cropConfig.ndviMax],
+  );
+
+  // Compute both Kc curves — the active one drives ETc, both display on chart
+  const ndviDataLinear = useMemo(
+    () => ndviDataRaw ? recalculateKc(ndviDataRaw, 'linear', kcParams) : null,
+    [ndviDataRaw, kcParams],
+  );
+  const ndviDataNonlinear = useMemo(
+    () => ndviDataRaw ? recalculateKc(ndviDataRaw, 'nonlinear', kcParams) : null,
+    [ndviDataRaw, kcParams],
+  );
+  const ndviData = kcFormula === 'linear' ? ndviDataLinear : ndviDataNonlinear;
 
   useEffect(() => {
     fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF)
@@ -89,6 +100,11 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
   // ── Crop-specific indicators ──
   const baseCrop = getBaseCrop(field.cropType ?? 'corn');
+
+  // Soybean: compute PTU data for growth stage tracking
+  const ptuData = baseCrop === 'soybean' && farmLatitude && gddData
+    ? calculatePtu(gddData, farmLatitude)
+    : null;
 
   // Wheat: vernalization
   const vernAlert = baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget
@@ -238,13 +254,18 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
             </div>
             <p className="text-[9px] mt-1.5" style={{ color: 'var(--tx3)' }}>
               {kcFormula === 'linear'
-                ? `Linear: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)`
-                : `Non-linear: Kc = 1 + (${cropConfig.kcMax.toFixed(2)} − 1) × [(NDVI − 0.15) / (0.85 − 0.15)] (Glenn et al. 2011, Kc_max FAO-56)`
+                ? `Active: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)`
+                : `Active: Kc = ${cropConfig.kcMin.toFixed(2)} + (${cropConfig.kcMax.toFixed(2)} − ${cropConfig.kcMin.toFixed(2)}) × [(NDVI − 0.15) / (${cropConfig.ndviMax.toFixed(2)} − 0.15)] (Glenn et al. 2011)`
               }
+            </p>
+            <p className="text-[9px]" style={{ color: 'var(--tx3)' }}>
+              Both curves shown on chart. Toggle selects which drives ETc/water balance.
             </p>
           </div>
           <NdviChart
             data={ndviData}
+            altKcData={kcFormula === 'linear' ? ndviDataNonlinear : ndviDataLinear}
+            activeFormula={kcFormula}
             onDateClick={field.polygon ? (date) => onNdviDateClick?.(date, ndviData) : undefined}
           />
         </>
@@ -256,7 +277,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       )}
 
       {/* Growth stages */}
-      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} />}
+      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} ptuData={ptuData} />}
 
       {/* Wheat: Vernalization card */}
       {baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget && (

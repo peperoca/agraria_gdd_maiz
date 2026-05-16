@@ -81,6 +81,8 @@ export interface CornStage {
   shortName: string;
   gdd: number;
   description: string;
+  /** Soybean only: PTU threshold for this stage */
+  ptu?: number;
 }
 
 export interface StationInfo {

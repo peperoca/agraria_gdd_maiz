@@ -13,25 +13,35 @@ import type { ChartOptions } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format, parseISO } from 'date-fns';
 import type { NdviReading } from '../types';
+import type { KcFormula } from '../utils/ndvi';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface NdviChartProps {
   data: NdviReading[];
+  altKcData?: NdviReading[] | null;
+  activeFormula?: KcFormula;
   onDateClick?: (date: string) => void;
 }
 
-export function NdviChart({ data, onDateClick }: NdviChartProps) {
+export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviChartProps) {
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const green = '#2d8a4e';
   const orange = styles.getPropertyValue('--orange').trim() || '#D97706';
 
   const sorted = useMemo(() => [...data].sort((a, b) => a.date.localeCompare(b.date)), [data]);
+  const altSorted = useMemo(
+    () => altKcData ? [...altKcData].sort((a, b) => a.date.localeCompare(b.date)) : null,
+    [altKcData],
+  );
 
-  const chartData = useMemo(() => ({
-    labels: sorted.map((d) => format(parseISO(d.date), 'MMM d')),
-    datasets: [
+  const activeLabel = activeFormula === 'nonlinear' ? 'Kc Non-linear' : 'Kc Linear';
+  const altLabel = activeFormula === 'nonlinear' ? 'Kc Linear' : 'Kc Non-linear';
+  const purple = '#7c3aed';
+
+  const chartData = useMemo(() => {
+    const datasets = [
       {
         label: 'NDVI',
         data: sorted.map((d) => d.ndviMean),
@@ -45,19 +55,31 @@ export function NdviChart({ data, onDateClick }: NdviChartProps) {
         yAxisID: 'yNdvi',
       },
       {
-        label: 'Kc',
+        label: activeLabel,
         data: sorted.map((d) => d.kc),
         borderColor: orange,
         backgroundColor: 'transparent',
         borderWidth: 2,
-        borderDash: [5, 3],
         tension: 0.3,
         pointRadius: 3,
         pointHoverRadius: 5,
         yAxisID: 'yKc',
       },
-    ],
-  }), [sorted, green, orange]);
+      ...(altSorted ? [{
+        label: altLabel,
+        data: altSorted.map((d) => d.kc),
+        borderColor: purple,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3] as number[],
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        yAxisID: 'yKc',
+      }] : []),
+    ];
+    return { labels: sorted.map((d) => format(parseISO(d.date), 'MMM d')), datasets };
+  }, [sorted, altSorted, green, orange, purple, activeLabel, altLabel]);
 
   const options: ChartOptions<'line'> = {
     responsive: true,
@@ -141,7 +163,7 @@ export function NdviChart({ data, onDateClick }: NdviChartProps) {
         <Line data={chartData} options={options} />
       </div>
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        Sentinel-2 NDVI (green area). Kc = 1.25 × NDVI + 0.20 (Glenn et al.). Cloud-filtered scenes only.
+        Sentinel-2 NDVI (green). Solid Kc = active formula for ETc. Dashed Kc = alternative. Cloud-filtered.
         {onDateClick && (
           <span style={{ color: 'var(--blue)' }}> Tap a point to view satellite imagery 🛰</span>
         )}

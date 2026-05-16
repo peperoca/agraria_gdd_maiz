@@ -25,13 +25,18 @@ export interface CropConfig {
   maturityPtu?: number;
   /** FAO-56 mid-season Kc for non-linear formula */
   kcMax: number;
+  /** Minimum Kc (initial/bare soil stage) for non-linear formula */
+  kcMin: number;
+  /** Maximum NDVI at full canopy for non-linear formula */
+  ndviMax: number;
 }
 
 // ── Helper: scale stage GDD values proportionally ──
-function scaleStages(stages: CornStage[], factor: number): CornStage[] {
+function scaleStages(stages: CornStage[], factor: number, ptuFactor?: number): CornStage[] {
   return stages.map((s) => ({
     ...s,
-    gdd: Math.round(s.gdd * factor / 10) * 10, // round to nearest 10
+    gdd: Math.round(s.gdd * factor / 10) * 10,
+    ...(s.ptu != null ? { ptu: Math.round(s.ptu * (ptuFactor ?? factor) / 10) * 10 } : {}),
   }));
 }
 
@@ -66,24 +71,24 @@ const CORN_STAGES_LONG = scaleStages(CORN_STAGES_INTERMEDIATE, 2800 / 2500);
 //  SOYBEAN STAGES (baseline = intermediate MG V-VI at 2400 GDD)
 // ═══════════════════════════════════════════════════════════════
 const SOYBEAN_STAGES_INTERMEDIATE: CornStage[] = [
-  { name: 'Emergence', shortName: 'VE', gdd: 100, description: 'Cotyledons above soil surface' },
-  { name: 'Cotyledon', shortName: 'VC', gdd: 165, description: 'Unifoliolate leaves unrolled; cotyledons fully open' },
-  { name: 'First Node', shortName: 'V1', gdd: 240, description: 'First trifoliolate leaf fully developed' },
-  { name: 'Second Node', shortName: 'V2', gdd: 340, description: 'Second trifoliolate; nodulation active' },
-  { name: 'Third Node', shortName: 'V3', gdd: 435, description: 'Rapid vegetative growth begins; N fixation increasing' },
-  { name: 'Fifth Node', shortName: 'V5', gdd: 610, description: 'Canopy closing; peak N fixation approaching' },
-  { name: 'Begin Bloom', shortName: 'R1', gdd: 820, description: 'First flower on any node; photoperiod sensitive' },
-  { name: 'Full Bloom', shortName: 'R2', gdd: 950, description: 'Open flower at one of two uppermost nodes' },
-  { name: 'Begin Pod', shortName: 'R3', gdd: 1090, description: 'Pod 5mm at one of four uppermost nodes' },
-  { name: 'Full Pod', shortName: 'R4', gdd: 1260, description: 'Pod 2cm at one of four uppermost nodes' },
-  { name: 'Begin Seed', shortName: 'R5', gdd: 1470, description: 'Seed 3mm in pod at upper nodes; rapid seed fill' },
-  { name: 'Full Seed', shortName: 'R6', gdd: 1745, description: 'Green seed fills pod cavity at upper nodes' },
-  { name: 'Begin Maturity', shortName: 'R7', gdd: 2070, description: 'One mature pod on main stem; leaves yellowing' },
-  { name: 'Full Maturity', shortName: 'R8', gdd: 2400, description: '95% of pods mature; harvest ready at 13% moisture' },
+  { name: 'Emergence', shortName: 'VE', gdd: 100, ptu: 1290, description: 'Cotyledons above soil surface' },
+  { name: 'Cotyledon', shortName: 'VC', gdd: 165, ptu: 2130, description: 'Unifoliolate leaves unrolled; cotyledons fully open' },
+  { name: 'First Node', shortName: 'V1', gdd: 240, ptu: 3100, description: 'First trifoliolate leaf fully developed' },
+  { name: 'Second Node', shortName: 'V2', gdd: 340, ptu: 4390, description: 'Second trifoliolate; nodulation active' },
+  { name: 'Third Node', shortName: 'V3', gdd: 435, ptu: 5620, description: 'Rapid vegetative growth begins; N fixation increasing' },
+  { name: 'Fifth Node', shortName: 'V5', gdd: 610, ptu: 7880, description: 'Canopy closing; peak N fixation approaching' },
+  { name: 'Begin Bloom', shortName: 'R1', gdd: 820, ptu: 10590, description: 'First flower on any node; photoperiod sensitive' },
+  { name: 'Full Bloom', shortName: 'R2', gdd: 950, ptu: 12270, description: 'Open flower at one of two uppermost nodes' },
+  { name: 'Begin Pod', shortName: 'R3', gdd: 1090, ptu: 14080, description: 'Pod 5mm at one of four uppermost nodes' },
+  { name: 'Full Pod', shortName: 'R4', gdd: 1260, ptu: 16280, description: 'Pod 2cm at one of four uppermost nodes' },
+  { name: 'Begin Seed', shortName: 'R5', gdd: 1470, ptu: 18990, description: 'Seed 3mm in pod at upper nodes; rapid seed fill' },
+  { name: 'Full Seed', shortName: 'R6', gdd: 1745, ptu: 22540, description: 'Green seed fills pod cavity at upper nodes' },
+  { name: 'Begin Maturity', shortName: 'R7', gdd: 2070, ptu: 26740, description: 'One mature pod on main stem; leaves yellowing' },
+  { name: 'Full Maturity', shortName: 'R8', gdd: 2400, ptu: 31000, description: '95% of pods mature; harvest ready at 13% moisture' },
 ];
 
-const SOYBEAN_STAGES_SHORT = scaleStages(SOYBEAN_STAGES_INTERMEDIATE, 2000 / 2400);
-const SOYBEAN_STAGES_LONG = scaleStages(SOYBEAN_STAGES_INTERMEDIATE, 2800 / 2400);
+const SOYBEAN_STAGES_SHORT = scaleStages(SOYBEAN_STAGES_INTERMEDIATE, 2000 / 2400, 26000 / 31000);
+const SOYBEAN_STAGES_LONG = scaleStages(SOYBEAN_STAGES_INTERMEDIATE, 2800 / 2400, 36000 / 31000);
 
 // ═══════════════════════════════════════════════════════════════
 //  WHEAT STAGES (baseline = intermediate at 1750 GDD)
@@ -118,6 +123,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 2200,
     stages: CORN_STAGES_SHORT,
     kcMax: 1.20,
+    kcMin: 0.30,
+    ndviMax: 0.88,
   },
   'corn-intermediate': {
     label: 'Corn — Intermediate',
@@ -128,6 +135,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 2500,
     stages: CORN_STAGES_INTERMEDIATE,
     kcMax: 1.20,
+    kcMin: 0.30,
+    ndviMax: 0.88,
   },
   'corn-long': {
     label: 'Corn — Long',
@@ -138,6 +147,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 2800,
     stages: CORN_STAGES_LONG,
     kcMax: 1.20,
+    kcMin: 0.30,
+    ndviMax: 0.88,
   },
   // bare alias → intermediate
   corn: {
@@ -149,6 +160,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     maturityGdd: 2500,
     stages: CORN_STAGES_INTERMEDIATE,
     kcMax: 1.20,
+    kcMin: 0.30,
+    ndviMax: 0.88,
   },
 
   // ── Soybean ──
@@ -163,6 +176,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     criticalPhotoperiod: 13.5,
     maturityPtu: 26000,
     kcMax: 1.15,
+    kcMin: 0.40,
+    ndviMax: 0.85,
   },
   'soybean-intermediate': {
     label: 'Soybean — Intermediate (MG V-VI)',
@@ -175,6 +190,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     criticalPhotoperiod: 13.0,
     maturityPtu: 31000,
     kcMax: 1.15,
+    kcMin: 0.40,
+    ndviMax: 0.85,
   },
   'soybean-long': {
     label: 'Soybean — Long (MG VII-VIII)',
@@ -187,6 +204,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     criticalPhotoperiod: 12.5,
     maturityPtu: 36000,
     kcMax: 1.15,
+    kcMin: 0.40,
+    ndviMax: 0.85,
   },
   // bare alias → intermediate
   soybean: {
@@ -200,6 +219,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     criticalPhotoperiod: 13.0,
     maturityPtu: 31000,
     kcMax: 1.15,
+    kcMin: 0.40,
+    ndviMax: 0.85,
   },
 
   // ── Wheat ──
@@ -213,6 +234,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: WHEAT_STAGES_SHORT,
     vernalizationTarget: 200,
     kcMax: 1.15,
+    kcMin: 0.30,
+    ndviMax: 0.85,
   },
   'wheat-intermediate': {
     label: 'Wheat — Intermediate',
@@ -224,6 +247,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: WHEAT_STAGES_INTERMEDIATE,
     vernalizationTarget: 500,
     kcMax: 1.15,
+    kcMin: 0.30,
+    ndviMax: 0.85,
   },
   'wheat-long': {
     label: 'Wheat — Long (Winter)',
@@ -235,6 +260,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: WHEAT_STAGES_LONG,
     vernalizationTarget: 1000,
     kcMax: 1.15,
+    kcMin: 0.30,
+    ndviMax: 0.85,
   },
   // bare alias → intermediate
   wheat: {
@@ -247,6 +274,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     stages: WHEAT_STAGES_INTERMEDIATE,
     vernalizationTarget: 500,
     kcMax: 1.15,
+    kcMin: 0.30,
+    ndviMax: 0.85,
   },
 };
 

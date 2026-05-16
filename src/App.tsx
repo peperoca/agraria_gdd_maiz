@@ -33,13 +33,13 @@ function App() {
     try {
       const data = await getFarms();
       setFarms(data);
-      if (data.length > 0 && !currentFarmId) {
-        setCurrentFarmId(data[0].id);
+      if (data.length > 0) {
+        setCurrentFarmId((prev) => prev ?? data[0].id);
       }
     } catch {
       setFarms([]);
     }
-  }, [currentFarmId]);
+  }, []);
 
   // Fetch stations, user info, and farms when authenticated
   useEffect(() => {

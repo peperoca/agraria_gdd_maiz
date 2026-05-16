@@ -2,26 +2,30 @@ import type { NdviReading, DailyEto, DailyETc } from '../types';
 
 export type KcFormula = 'linear' | 'nonlinear';
 
-// Non-linear formula parameters (Glenn et al. 2011)
-const NDVI_MIN = 0.15; // bare soil
-const NDVI_MAX = 0.85; // full canopy cover
+const NDVI_MIN = 0.15; // bare soil (global)
+
+export interface KcParams {
+  kcMax: number;
+  kcMin: number;
+  ndviMax: number;
+}
 
 /**
  * Compute Kc from NDVI using the selected formula.
  *
  * Linear (Glenn et al.): Kc = 1.25 × NDVI + 0.20
- * Non-linear (Glenn et al. 2011): Kc = 1 + (Kc_max − 1) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
+ * Non-linear (Glenn et al. 2011): Kc = Kc_min + (Kc_max − Kc_min) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
  */
-export function computeKc(ndvi: number, formula: KcFormula, kcMax: number): number {
+export function computeKc(ndvi: number, formula: KcFormula, params: KcParams): number {
   if (formula === 'linear') {
     const kc = 1.25 * ndvi + 0.20;
     return Math.max(0, Math.min(1.4, kc));
   }
   // Non-linear (Glenn et al. 2011)
-  const ndviClamped = Math.max(NDVI_MIN, Math.min(NDVI_MAX, ndvi));
-  const ratio = (ndviClamped - NDVI_MIN) / (NDVI_MAX - NDVI_MIN);
-  const kc = 1 + (kcMax - 1) * ratio;
-  return Math.max(0, Math.min(kcMax, kc));
+  const ndviClamped = Math.max(NDVI_MIN, Math.min(params.ndviMax, ndvi));
+  const ratio = (ndviClamped - NDVI_MIN) / (params.ndviMax - NDVI_MIN);
+  const kc = params.kcMin + (params.kcMax - params.kcMin) * ratio;
+  return Math.max(0, Math.min(params.kcMax, kc));
 }
 
 /**
@@ -30,11 +34,11 @@ export function computeKc(ndvi: number, formula: KcFormula, kcMax: number): numb
 export function recalculateKc(
   ndviReadings: NdviReading[],
   formula: KcFormula,
-  kcMax: number,
+  params: KcParams,
 ): NdviReading[] {
   return ndviReadings.map((r) => ({
     ...r,
-    kc: Math.round(computeKc(r.ndviMean, formula, kcMax) * 10000) / 10000,
+    kc: Math.round(computeKc(r.ndviMean, formula, params) * 10000) / 10000,
   }));
 }
 
