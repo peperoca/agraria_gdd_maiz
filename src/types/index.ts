@@ -83,6 +83,8 @@ export interface CornStage {
   description: string;
   /** Soybean only: PTU threshold for this stage */
   ptu?: number;
+  /** Wheat only: cumulative vernalization hours (Vd) threshold */
+  vd?: number;
 }
 
 export interface StationInfo {

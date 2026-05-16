@@ -106,10 +106,13 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
     ? calculatePtu(gddData, farmLatitude)
     : null;
 
-  // Wheat: vernalization
-  const vernAlert = baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget
+  // Wheat: vernalization data (used for both alert and growth stage tracking)
+  const vernData = baseCrop === 'wheat' && gddData
+    ? calculateCumulativeVernalization(gddData)
+    : null;
+
+  const vernAlert = vernData && cropConfig.vernalizationTarget
     ? (() => {
-        const vernData = calculateCumulativeVernalization(gddData);
         const latest = vernData.length > 0 ? vernData[vernData.length - 1] : null;
         const jointingGdd = cropConfig.stages.find((s) => s.shortName === 'SE')?.gdd ?? 600;
         return latest ? getVernalizationStatus(latest.cumulativeVd, cropConfig.vernalizationTarget!, cumulative, jointingGdd) : null;
@@ -215,8 +218,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         </div>
       )}
 
-      {/* GDD Chart */}
-      {gddData && gddData.length > 0 && <GddChart data={gddData} />}
+      {/* GDD Chart (+ PTU for soybean) */}
+      {gddData && gddData.length > 0 && <GddChart data={gddData} ptuData={ptuData} />}
 
       {/* ETo + Rain Chart */}
       {etoData && etoData.length > 0 && (
@@ -277,7 +280,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       )}
 
       {/* Growth stages */}
-      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} ptuData={ptuData} />}
+      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} ptuData={ptuData} vernData={vernData} />}
 
       {/* Wheat: Vernalization card */}
       {baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget && (

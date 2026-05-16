@@ -32,11 +32,12 @@ export interface CropConfig {
 }
 
 // ── Helper: scale stage GDD values proportionally ──
-function scaleStages(stages: CornStage[], factor: number, ptuFactor?: number): CornStage[] {
+function scaleStages(stages: CornStage[], factor: number, secondaryFactor?: number): CornStage[] {
   return stages.map((s) => ({
     ...s,
     gdd: Math.round(s.gdd * factor / 10) * 10,
-    ...(s.ptu != null ? { ptu: Math.round(s.ptu * (ptuFactor ?? factor) / 10) * 10 } : {}),
+    ...(s.ptu != null ? { ptu: Math.round(s.ptu * (secondaryFactor ?? factor) / 10) * 10 } : {}),
+    ...(s.vd != null ? { vd: Math.round(s.vd * (secondaryFactor ?? factor)) } : {}),
   }));
 }
 
@@ -94,20 +95,20 @@ const SOYBEAN_STAGES_LONG = scaleStages(SOYBEAN_STAGES_INTERMEDIATE, 2800 / 2400
 //  WHEAT STAGES (baseline = intermediate at 1750 GDD)
 // ═══════════════════════════════════════════════════════════════
 const WHEAT_STAGES_INTERMEDIATE: CornStage[] = [
-  { name: 'Emergence', shortName: 'E', gdd: 110, description: 'Coleoptile emerges from soil' },
-  { name: 'Seedling', shortName: 'S', gdd: 185, description: 'First leaf unfolded; seminal roots active' },
-  { name: 'Tillering', shortName: 'T', gdd: 370, description: 'Tillers forming from crown; root system expanding' },
-  { name: 'Stem Extension', shortName: 'SE', gdd: 550, description: 'Internodes elongating; head moving upward' },
-  { name: 'Booting', shortName: 'BT', gdd: 830, description: 'Flag leaf sheath swelling with head inside' },
-  { name: 'Heading', shortName: 'HD', gdd: 970, description: 'Head emerging from flag leaf sheath' },
-  { name: 'Anthesis', shortName: 'AN', gdd: 1110, description: 'Flowering; pollination occurring' },
-  { name: 'Milk', shortName: 'ML', gdd: 1290, description: 'Kernel contains milky liquid; grain filling' },
-  { name: 'Dough', shortName: 'DG', gdd: 1480, description: 'Kernel contents doughy; losing green color' },
-  { name: 'Maturity', shortName: 'MT', gdd: 1750, description: 'Kernel hard; physiological maturity reached' },
+  { name: 'Emergence', shortName: 'E', gdd: 110, vd: 30, description: 'Coleoptile emerges from soil' },
+  { name: 'Seedling', shortName: 'S', gdd: 185, vd: 80, description: 'First leaf unfolded; seminal roots active' },
+  { name: 'Tillering', shortName: 'T', gdd: 370, vd: 250, description: 'Tillers forming from crown; root system expanding' },
+  { name: 'Stem Extension', shortName: 'SE', gdd: 550, vd: 500, description: 'Internodes elongating; vernalization must be met' },
+  { name: 'Booting', shortName: 'BT', gdd: 830, vd: 500, description: 'Flag leaf sheath swelling with head inside' },
+  { name: 'Heading', shortName: 'HD', gdd: 970, vd: 500, description: 'Head emerging from flag leaf sheath' },
+  { name: 'Anthesis', shortName: 'AN', gdd: 1110, vd: 500, description: 'Flowering; pollination occurring' },
+  { name: 'Milk', shortName: 'ML', gdd: 1290, vd: 500, description: 'Kernel contains milky liquid; grain filling' },
+  { name: 'Dough', shortName: 'DG', gdd: 1480, vd: 500, description: 'Kernel contents doughy; losing green color' },
+  { name: 'Maturity', shortName: 'MT', gdd: 1750, vd: 500, description: 'Kernel hard; physiological maturity reached' },
 ];
 
-const WHEAT_STAGES_SHORT = scaleStages(WHEAT_STAGES_INTERMEDIATE, 1500 / 1750);
-const WHEAT_STAGES_LONG = scaleStages(WHEAT_STAGES_INTERMEDIATE, 2100 / 1750);
+const WHEAT_STAGES_SHORT = scaleStages(WHEAT_STAGES_INTERMEDIATE, 1500 / 1750, 200 / 500);
+const WHEAT_STAGES_LONG = scaleStages(WHEAT_STAGES_INTERMEDIATE, 2100 / 1750, 1000 / 500);
 
 // ═══════════════════════════════════════════════════════════════
 //  CROP CONFIGS (12 entries + 3 bare aliases)
