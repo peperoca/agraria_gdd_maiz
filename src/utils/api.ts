@@ -241,6 +241,23 @@ export async function getNdviData(fieldId: number): Promise<NdviReadingRaw[]> {
   return apiFetch<NdviReadingRaw[]>(`ndvi.php?field_id=${fieldId}`);
 }
 
+// --- Soil Moisture ---
+
+export interface SoilMoistureReadingRaw {
+  date: string;
+  vv_db: number;
+  vh_db: number | null;
+  vv_raw_db: number;
+  ndvi_used: number | null;
+  sm_relative: number | null;
+  vv_dry: number | null;
+  vv_wet: number | null;
+}
+
+export async function getSoilMoistureData(fieldId: number): Promise<SoilMoistureReadingRaw[]> {
+  return apiFetch<SoilMoistureReadingRaw[]>(`soil-moisture.php?field_id=${fieldId}`);
+}
+
 // --- Admin ---
 
 import type { AdminUser, AdminStation } from '../types';

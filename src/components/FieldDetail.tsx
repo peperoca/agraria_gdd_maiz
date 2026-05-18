@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
+import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData } from '../utils/api';
+import { getNdviData, getSoilMoistureData } from '../utils/api';
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
@@ -17,6 +17,7 @@ import { GrowthStages } from './GrowthStages';
 import { CropAlertBanner } from './CropAlertBanner';
 import { VernalizationCard } from './VernalizationCard';
 import { PhotoperiodCard } from './PhotoperiodCard';
+import { SoilMoistureChart } from './SoilMoistureChart';
 
 interface FieldDetailProps {
   field: Field;
@@ -34,6 +35,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
   const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
   const [gapPref, setGapPref] = useState<GapFillPreference>('carry_forward');
+  const [soilMoistureData, setSoilMoistureData] = useState<SoilMoistureReading[] | null>(null);
 
   const kcParams: KcParams = useMemo(
     () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
@@ -75,6 +77,25 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         setNdviDataRaw(readings);
       })
       .catch(() => setNdviDataRaw(null));
+  }, [field.id, field.polygon]);
+
+  // Fetch soil moisture data if field has polygon
+  useEffect(() => {
+    if (!field.polygon) return;
+    getSoilMoistureData(field.id)
+      .then((raw) => {
+        setSoilMoistureData(raw.map((r) => ({
+          date: r.date,
+          vvDb: r.vv_db,
+          vhDb: r.vh_db,
+          vvRawDb: r.vv_raw_db,
+          ndviUsed: r.ndvi_used,
+          smRelative: r.sm_relative,
+          vvDry: r.vv_dry,
+          vvWet: r.vv_wet,
+        })));
+      })
+      .catch(() => setSoilMoistureData(null));
   }, [field.id, field.polygon]);
 
   // Calculate ETc when both ETo and NDVI are available (recalculates on formula change)
@@ -314,6 +335,11 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {/* Water Balance Chart (Rain vs ETc) */}
       {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (
         <WaterBalanceChart etcData={etcData} rainData={rainData} />
+      )}
+
+      {/* Soil Moisture Chart (Sentinel-1) */}
+      {soilMoistureData && soilMoistureData.some((d) => d.smRelative !== null) && (
+        <SoilMoistureChart data={soilMoistureData} />
       )}
 
       {/* Growth stages */}

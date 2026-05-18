@@ -139,6 +139,17 @@ export interface DailyETc {
   cumulative: number; // Cumulative ETc (mm)
 }
 
+export interface SoilMoistureReading {
+  date: string;              // YYYY-MM-DD
+  vvDb: number;              // Vegetation-corrected VV backscatter (dB)
+  vhDb: number | null;       // VH backscatter (dB)
+  vvRawDb: number;           // Uncorrected VV (dB)
+  ndviUsed: number | null;   // NDVI value used for correction
+  smRelative: number | null; // 0-100% relative soil moisture (null if bootstrapping)
+  vvDry: number | null;      // Running min VV at computation time
+  vvWet: number | null;      // Running max VV at computation time
+}
+
 export interface AppSettings {
   stationMac: string;
   stationName: string;
