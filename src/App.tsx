@@ -311,6 +311,8 @@ function App() {
                 setSelectedFieldId(null);
                 setView('add-field');
               }}
+              stationMac={currentFarm?.stationMac}
+              stationName={currentFarm?.stationName}
             />
           )
         )}

@@ -1,13 +1,16 @@
 import type { Field } from '../types';
 import { FieldCard } from './FieldCard';
+import { WeatherStationCard } from './WeatherStationCard';
 
 interface DashboardProps {
   fields: Field[];
   onFieldClick: (field: Field) => void;
   onAddField: () => void;
+  stationMac?: string | null;
+  stationName?: string | null;
 }
 
-export function Dashboard({ fields, onFieldClick, onAddField }: DashboardProps) {
+export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName }: DashboardProps) {
   if (fields.length === 0) {
     return (
       <div className="text-center py-12">
@@ -27,6 +30,9 @@ export function Dashboard({ fields, onFieldClick, onAddField }: DashboardProps) 
 
   return (
     <div className="space-y-3">
+      {stationMac && (
+        <WeatherStationCard stationMac={stationMac} stationName={stationName || stationMac} />
+      )}
       {fields.map((field) => (
         <FieldCard key={field.id} field={field} onClick={() => onFieldClick(field)} />
       ))}
