@@ -29,13 +29,17 @@ interface WeatherStationCardProps {
   stationName: string;
 }
 
+const fToC = (f: number) => (f - 32) * 5 / 9;
+const mphToKmh = (mph: number) => mph * 1.60934;
+const inToMm = (inches: number) => inches * 25.4;
+
 interface HourlyAvg {
   label: string;
-  tempf: number | null;
+  tempC: number | null;
   humidity: number | null;
-  windspeedmph: number | null;
+  windKmh: number | null;
   solarradiation: number | null;
-  dailyrainin: number | null;
+  rainMm: number | null;
 }
 
 function groupToHourly(raw: WeatherReadingRaw[]): HourlyAvg[] {
@@ -71,13 +75,17 @@ function groupToHourly(raw: WeatherReadingRaw[]): HourlyAvg[] {
       return valid.length > 0 ? Math.max(...valid) : null;
     };
 
+    const tempfAvg = avg(readings.map((r) => r.tempf));
+    const windAvg = avg(readings.map((r) => r.windspeedmph));
+    const rainMax = maxVal(readings.map((r) => r.dailyrainin));
+
     return {
       label,
-      tempf: avg(readings.map((r) => r.tempf)),
+      tempC: tempfAvg !== null ? fToC(tempfAvg) : null,
       humidity: avg(readings.map((r) => r.humidity)),
-      windspeedmph: avg(readings.map((r) => r.windspeedmph)),
+      windKmh: windAvg !== null ? mphToKmh(windAvg) : null,
       solarradiation: avg(readings.map((r) => r.solarradiation)),
-      dailyrainin: maxVal(readings.map((r) => r.dailyrainin)),
+      rainMm: rainMax !== null ? inToMm(rainMax) : null,
     };
   });
 }
@@ -128,8 +136,8 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
     datasets: [
       {
         type: 'line' as const,
-        label: 'Temp (°F)',
-        data: hourly.map((h) => h.tempf),
+        label: 'Temp (°C)',
+        data: hourly.map((h) => h.tempC),
         borderColor: orange,
         backgroundColor: 'transparent',
         borderWidth: 2,
@@ -155,8 +163,8 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
       },
       {
         type: 'line' as const,
-        label: 'Wind (mph)',
-        data: hourly.map((h) => h.windspeedmph),
+        label: 'Wind (km/h)',
+        data: hourly.map((h) => h.windKmh),
         borderColor: gray,
         backgroundColor: 'transparent',
         borderWidth: 1,
@@ -182,8 +190,8 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
       },
       {
         type: 'bar' as const,
-        label: 'Rain (in)',
-        data: hourly.map((h) => h.dailyrainin),
+        label: 'Rain (mm)',
+        data: hourly.map((h) => h.rainMm),
         backgroundColor: `${teal}60`,
         borderColor: teal,
         borderWidth: 1,
@@ -214,7 +222,7 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
           label(ctx) {
             const v = ctx.parsed.y;
             if (v === null || v === undefined) return '';
-            const units = ['°F', '%', ' mph', ' W/m²', ' in'];
+            const units = ['°C', '%', ' km/h', ' W/m²', ' mm'];
             return `${ctx.dataset.label}: ${v.toFixed(1)}${units[ctx.datasetIndex] || ''}`;
           },
         },
@@ -237,7 +245,7 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
       yTemp: {
         type: 'linear',
         position: 'left',
-        title: { display: true, text: '°F', font: { size: 9 }, color: orange },
+        title: { display: true, text: '°C', font: { size: 9 }, color: orange },
         ticks: { font: { size: 8 }, color: orange },
         grid: { color: 'rgba(0,0,0,0.05)' },
       },
@@ -307,7 +315,7 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
         <div className="text-center">
           <div className="text-[10px]" style={{ color: orange }}>Temp</div>
           <div className="text-sm font-bold" style={{ color: orange }}>
-            {latest.tempf !== null ? `${latest.tempf.toFixed(0)}°` : '—'}
+            {latest.tempf !== null ? `${fToC(latest.tempf).toFixed(1)}°` : '—'}
           </div>
         </div>
         <div className="text-center">
@@ -319,7 +327,7 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
         <div className="text-center">
           <div className="text-[10px]" style={{ color: gray }}>Wind</div>
           <div className="text-sm font-bold" style={{ color: gray }}>
-            {latest.windspeedmph !== null ? `${latest.windspeedmph.toFixed(1)}` : '—'}
+            {latest.windspeedmph !== null ? `${mphToKmh(latest.windspeedmph).toFixed(1)}` : '—'}
           </div>
         </div>
         <div className="text-center">
@@ -331,7 +339,7 @@ export function WeatherStationCard({ stationMac, stationName }: WeatherStationCa
         <div className="text-center">
           <div className="text-[10px]" style={{ color: teal }}>Rain</div>
           <div className="text-sm font-bold" style={{ color: teal }}>
-            {latest.dailyrainin !== null ? `${latest.dailyrainin.toFixed(2)}"` : '—'}
+            {latest.dailyrainin !== null ? `${inToMm(latest.dailyrainin).toFixed(1)}` : '—'}
           </div>
         </div>
       </div>
