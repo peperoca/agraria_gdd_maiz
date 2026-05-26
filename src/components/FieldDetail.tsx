@@ -129,6 +129,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const progress = Math.min(100, Math.round((cumulative / cropConfig.maturityGdd) * 100));
   const daysSinceSowing = differenceInDays(new Date(), parseISO(field.sowingDate));
   const hasRain = rainData && rainData.length > 0;
+  const hasIrrigation = irrigationData && irrigationData.length > 0;
+  const irrigMap = useMemo(() => {
+    const m = new Map<string, number>();
+    if (irrigationData) {
+      for (const i of irrigationData) m.set(i.date, i.depthMm);
+    }
+    return m;
+  }, [irrigationData]);
 
   // ── Crop-specific indicators ──
   const baseCrop = getBaseCrop(field.cropType ?? 'corn');
@@ -291,7 +299,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
       {/* ETo + Rain Chart */}
       {etoData && etoData.length > 0 && (
-        <EtoChart data={etoData} rainData={rainData ?? undefined} />
+        <EtoChart data={etoData} rainData={rainData ?? undefined} irrigationData={irrigationData} />
       )}
 
       {/* NDVI Chart + Kc Formula toggle */}
@@ -389,6 +397,9 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                   {hasRain && (
                     <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Rain</th>
                   )}
+                  {hasIrrigation && (
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Irrig.</th>
+                  )}
                   {etcData && etcData.length > 0 && (
                     <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>ETc</th>
                   )}
@@ -435,6 +446,11 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                         {hasRain && (
                           <td className="py-1.5 px-2 text-right font-medium" style={{ color: '#1a9988' }}>
                             {rainDay && rainDay.rain > 0 ? `${rainDay.rain.toFixed(1)}` : '—'}
+                          </td>
+                        )}
+                        {hasIrrigation && (
+                          <td className="py-1.5 px-2 text-right font-medium" style={{ color: '#16a34a' }}>
+                            {irrigMap.get(d.date) ? `${irrigMap.get(d.date)!.toFixed(1)}` : '—'}
                           </td>
                         )}
                         {etcData && etcData.length > 0 && (
