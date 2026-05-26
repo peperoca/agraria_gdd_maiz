@@ -156,6 +156,7 @@ export interface IrrigationEquipment {
   name: string;
   serialNumber: string | null;
   reportUrl: string | null;
+  areaHa: number | null;
   type: string;
   isActive: boolean;
   createdAt: string;

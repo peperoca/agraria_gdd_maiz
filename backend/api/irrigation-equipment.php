@@ -26,7 +26,7 @@ if ($method === 'GET') {
     if (!$stmt->fetch()) json_error('Farm not found', 404);
 
     $stmt = $db->prepare("
-        SELECT id, farm_id, name, serial_number, report_url, type, is_active, created_at
+        SELECT id, farm_id, name, serial_number, report_url, area_ha, type, is_active, created_at
         FROM irrigation_equipment
         WHERE farm_id = ? AND is_active = 1
         ORDER BY name
@@ -42,6 +42,7 @@ if ($method === 'POST') {
     $name = trim($body['name'] ?? '');
     $serialNumber = trim($body['serial_number'] ?? '');
     $reportUrl = trim($body['report_url'] ?? '');
+    $areaHa = isset($body['area_ha']) && $body['area_ha'] !== '' ? (float) $body['area_ha'] : null;
     $type = $body['type'] ?? 'pivot';
 
     if (!$farmId) json_error('farm_id is required');
@@ -56,13 +57,13 @@ if ($method === 'POST') {
     if (!in_array($type, $validTypes)) $type = 'other';
 
     $stmt = $db->prepare("
-        INSERT INTO irrigation_equipment (farm_id, name, serial_number, report_url, type)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO irrigation_equipment (farm_id, name, serial_number, report_url, area_ha, type)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$farmId, $name, $serialNumber ?: null, $reportUrl ?: null, $type]);
+    $stmt->execute([$farmId, $name, $serialNumber ?: null, $reportUrl ?: null, $areaHa, $type]);
 
     $id = (int) $db->lastInsertId();
-    $stmt = $db->prepare("SELECT id, farm_id, name, serial_number, report_url, type, is_active, created_at FROM irrigation_equipment WHERE id = ?");
+    $stmt = $db->prepare("SELECT id, farm_id, name, serial_number, report_url, area_ha, type, is_active, created_at FROM irrigation_equipment WHERE id = ?");
     $stmt->execute([$id]);
     json_response($stmt->fetch(), 201);
 }
@@ -97,6 +98,10 @@ if ($method === 'PUT') {
         $sets[] = "report_url = ?";
         $params[] = trim($body['report_url']) ?: null;
     }
+    if (array_key_exists('area_ha', $body)) {
+        $sets[] = "area_ha = ?";
+        $params[] = ($body['area_ha'] !== null && $body['area_ha'] !== '') ? (float) $body['area_ha'] : null;
+    }
     if (isset($body['type'])) {
         $validTypes = ['pivot', 'drip', 'sprinkler', 'flood', 'other'];
         $sets[] = "type = ?";
@@ -109,7 +114,7 @@ if ($method === 'PUT') {
     $stmt = $db->prepare("UPDATE irrigation_equipment SET " . implode(', ', $sets) . " WHERE id = ?");
     $stmt->execute($params);
 
-    $stmt = $db->prepare("SELECT id, farm_id, name, serial_number, report_url, type, is_active, created_at FROM irrigation_equipment WHERE id = ?");
+    $stmt = $db->prepare("SELECT id, farm_id, name, serial_number, report_url, area_ha, type, is_active, created_at FROM irrigation_equipment WHERE id = ?");
     $stmt->execute([$id]);
     json_response($stmt->fetch());
 }

@@ -24,6 +24,7 @@ function mapEquipment(raw: IrrigationEquipmentRaw): IrrigationEquipment {
     name: raw.name,
     serialNumber: raw.serial_number,
     reportUrl: raw.report_url,
+    areaHa: raw.area_ha,
     type: raw.type,
     isActive: !!raw.is_active,
     createdAt: raw.created_at,
@@ -62,6 +63,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
   const [newName, setNewName] = useState('');
   const [newSerial, setNewSerial] = useState('');
   const [newUrl, setNewUrl] = useState('');
+  const [newArea, setNewArea] = useState('');
   const [newType, setNewType] = useState('pivot');
   const [saving, setSaving] = useState(false);
 
@@ -119,11 +121,13 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
         name: newName.trim(),
         serial_number: newSerial.trim() || undefined,
         report_url: newUrl.trim() || undefined,
+        area_ha: newArea ? parseFloat(newArea) : undefined,
         type: newType,
       });
       setNewName('');
       setNewSerial('');
       setNewUrl('');
+      setNewArea('');
       setNewType('pivot');
       setShowAddForm(false);
       await fetchEquipment();
@@ -234,7 +238,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 className="agraria-input w-full"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Serial Number</label>
                 <input
@@ -242,6 +246,17 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                   value={newSerial}
                   onChange={(e) => setNewSerial(e.target.value)}
                   placeholder="AgSense serial"
+                  className="agraria-input w-full"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Area (ha) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newArea}
+                  onChange={(e) => setNewArea(e.target.value)}
+                  placeholder="e.g. 65.5"
                   className="agraria-input w-full"
                 />
               </div>
@@ -270,7 +285,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 className="agraria-input w-full text-[10px]"
               />
               <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>
-                Open the &quot;Applied by Day&quot; report in AgSense 365 and copy the URL. The system will replace the date parameters automatically.
+                Open the &quot;Applied by Day&quot; report in AgSense 365 and copy the URL. The system reads Total Cubic Meters Pumped and divides by the irrigated area to compute average mm/day.
               </p>
             </div>
             <button
@@ -313,12 +328,18 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 <div className="text-[10px]" style={{ color: 'var(--tx3)' }}>
                   {equip.type.charAt(0).toUpperCase() + equip.type.slice(1)}
                   {equip.serialNumber && ` · SN: ${equip.serialNumber}`}
+                  {equip.areaHa && ` · ${equip.areaHa} ha`}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {equip.reportUrl && (
+                {equip.reportUrl && equip.areaHa && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#1a998820', color: '#1a9988' }}>
                     Auto-fetch
+                  </span>
+                )}
+                {equip.reportUrl && !equip.areaHa && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#dc262620', color: '#dc2626' }}>
+                    Set area
                   </span>
                 )}
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded"

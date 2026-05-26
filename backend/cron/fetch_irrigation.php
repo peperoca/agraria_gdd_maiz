@@ -32,7 +32,7 @@ $db = getDB();
 
 // Get all active equipment with a report URL
 $stmt = $db->query("
-    SELECT id, name, serial_number, report_url
+    SELECT id, name, serial_number, report_url, area_ha
     FROM irrigation_equipment
     WHERE is_active = 1 AND report_url IS NOT NULL AND report_url != ''
 ");
@@ -53,8 +53,14 @@ foreach ($equipment as $equip) {
     $equipName = $equip['name'];
     $serialNumber = $equip['serial_number'];
     $reportUrl = $equip['report_url'];
+    $areaHa = $equip['area_ha'] ? (float) $equip['area_ha'] : null;
 
-    echo "── Equipment: $equipName (serial: $serialNumber, id: $equipId) ──\n";
+    echo "── Equipment: $equipName (serial: $serialNumber, id: $equipId, area: " . ($areaHa ? "{$areaHa} ha" : "NOT SET") . ") ──\n";
+
+    if (!$areaHa) {
+        echo "  SKIPPED — area_ha not set. Cannot compute average mm/ha.\n\n";
+        continue;
+    }
 
     // Find last reading date for this equipment
     $stmt = $db->prepare("SELECT MAX(date) AS last_date FROM irrigation_readings WHERE equipment_id = ?");
@@ -65,8 +71,17 @@ foreach ($equipment as $equip) {
         // Start from day after last reading
         $startDate = date('Y-m-d', strtotime($lastDate . ' +1 day'));
     } else {
-        // Default: 7 days ago
-        $startDate = date('Y-m-d', $nowLocal - (7 * 86400));
+        // No readings yet — go back to the earliest assignment start date for this equipment
+        $stmt = $db->prepare("SELECT MIN(start_date) FROM irrigation_assignments WHERE equipment_id = ?");
+        $stmt->execute([$equipId]);
+        $earliestAssignment = $stmt->fetchColumn();
+
+        if ($earliestAssignment) {
+            $startDate = $earliestAssignment;
+        } else {
+            // No assignments either — default to 7 days ago
+            $startDate = date('Y-m-d', $nowLocal - (7 * 86400));
+        }
     }
 
     if ($startDate > $yesterdayLocal) {
@@ -79,7 +94,7 @@ foreach ($equipment as $equip) {
     // Iterate each day
     $current = $startDate;
     while ($current <= $yesterdayLocal) {
-        $depthMm = fetch_agsense_day($reportUrl, $current);
+        $depthMm = fetch_agsense_day($reportUrl, $current, $areaHa);
 
         if ($depthMm !== null) {
             // Upsert reading
@@ -132,9 +147,18 @@ function build_agsense_url(string $template, string $date): string {
 
 /**
  * Fetch a single day's irrigation depth from AgSense report.
- * Returns depth in mm, or null on failure.
+ * Returns average depth in mm (= total m³ / 10 / area_ha), or null on failure.
+ *
+ * AgSense reports "Total Cubic Meters Pumped" which is the raw volume.
+ * To get average mm applied over the whole irrigated area:
+ *   mm = m³ / (area_ha × 10)
+ *   (because 1 m³ over 1 ha = 0.1 mm)
+ *
+ * Parsing strategies for "Total Cubic Meters Pumped":
+ * 1. Label/value div: <div ...>Total Cubic Meters Pumped:</div> <div ...>123 cubic meters</div>
+ * 2. Table footer: <th id="footcol_6">123</th> (column 6 = Total Cubic Meters)
  */
-function fetch_agsense_day(string $template, string $date): ?float {
+function fetch_agsense_day(string $template, string $date, float $areaHa): ?float {
     $url = build_agsense_url($template, $date);
 
     $result = curl_fetch($url, 30);
@@ -143,17 +167,29 @@ function fetch_agsense_day(string $template, string $date): ?float {
         return null;
     }
 
-    // Parse "Total Millimeters Applied: X.XX" from HTML
-    if (preg_match('/Total Millimeters Applied:\s*([\d.]+)/', $result['body'], $matches)) {
-        $value = (float) $matches[1];
-        return round($value, 2);
+    $html = $result['body'];
+    $cubicMeters = null;
+
+    // Strategy 1: Label/value div pattern — "Total Cubic Meters Pumped:"
+    if (preg_match('/Total Cubic Meters Pumped:<\/div>\s*<div[^>]*>\s*([\d,.]+)\s*cubic meters/s', $html, $matches)) {
+        $cubicMeters = (float) str_replace(',', '', $matches[1]);
     }
 
-    // Also try "Total Inches Applied" and convert
-    if (preg_match('/Total Inches Applied:\s*([\d.]+)/', $result['body'], $matches)) {
-        $inches = (float) $matches[1];
-        return round($inches * 25.4, 2);
+    // Strategy 2: Table footer — Total Cubic Meters is column 6
+    if ($cubicMeters === null && preg_match('/id="footcol_6"[^>]*>([\d,.]+)</', $html, $matches)) {
+        $cubicMeters = (float) str_replace(',', '', $matches[1]);
     }
 
-    return null;
+    // Strategy 3: Inline block div pattern (PDF section)
+    if ($cubicMeters === null && preg_match('/Total Cubic Meters Pumped:.*?<div[^>]*>([\d,.]+)\s*cubic meters/s', $html, $matches)) {
+        $cubicMeters = (float) str_replace(',', '', $matches[1]);
+    }
+
+    if ($cubicMeters === null) {
+        return null;
+    }
+
+    // Convert: mm = m³ / 10 / area_ha
+    $depthMm = $cubicMeters / 10.0 / $areaHa;
+    return round($depthMm, 2);
 }

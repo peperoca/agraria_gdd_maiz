@@ -266,6 +266,7 @@ export interface IrrigationEquipmentRaw {
   name: string;
   serial_number: string | null;
   report_url: string | null;
+  area_ha: number | null;
   type: string;
   is_active: number;
   created_at: string;
@@ -292,7 +293,7 @@ export async function getIrrigationEquipment(farmId: number): Promise<Irrigation
 }
 
 export async function createIrrigationEquipment(data: {
-  farm_id: number; name: string; serial_number?: string; report_url?: string; type?: string;
+  farm_id: number; name: string; serial_number?: string; report_url?: string; area_ha?: number; type?: string;
 }): Promise<IrrigationEquipmentRaw> {
   return apiFetch<IrrigationEquipmentRaw>('irrigation-equipment.php', {
     method: 'POST',
