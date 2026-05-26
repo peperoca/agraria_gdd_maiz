@@ -34,7 +34,7 @@ export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBa
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const teal = '#1a9988';
   const red = '#dc2626';
-  const green = '#16a34a';
+  const orange = styles.getPropertyValue('--orange').trim() || '#d85a30';
 
   const hasIrrigation = irrigationData && irrigationData.length > 0;
 
@@ -103,7 +103,7 @@ export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBa
         type: 'line' as const,
         label: 'Cum. Irrigation (mm)',
         data: balanceData.map((d) => d.cumIrrig),
-        borderColor: green,
+        borderColor: orange,
         backgroundColor: 'transparent',
         borderWidth: 2,
         borderDash: [5, 3],
@@ -129,7 +129,7 @@ export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBa
       labels: dates.map((d) => format(parseISO(d), 'MMM d')),
       datasets,
     };
-  }, [balanceData, dates, teal, red, green, hasIrrigation]);
+  }, [balanceData, dates, teal, red, orange, hasIrrigation]);
 
   const options: ChartOptions<'bar'> = {
     responsive: true,
@@ -173,8 +173,8 @@ export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBa
           </div>
           {hasIrrigation && (
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: green }}>Irrig.</div>
-              <div className="text-base font-semibold" style={{ color: green }}>
+              <div className="text-[11px] opacity-75" style={{ color: orange }}>Irrig.</div>
+              <div className="text-base font-semibold" style={{ color: orange }}>
                 {lastBalance.cumIrrig.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
               </div>
             </div>

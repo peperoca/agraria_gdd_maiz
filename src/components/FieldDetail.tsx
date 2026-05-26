@@ -449,7 +449,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                           </td>
                         )}
                         {hasIrrigation && (
-                          <td className="py-1.5 px-2 text-right font-medium" style={{ color: '#16a34a' }}>
+                          <td className="py-1.5 px-2 text-right font-medium" style={{ color: 'var(--orange)' }}>
                             {irrigMap.get(d.date) ? `${irrigMap.get(d.date)!.toFixed(1)}` : '—'}
                           </td>
                         )}

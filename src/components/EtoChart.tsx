@@ -42,7 +42,7 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
   const blueM = styles.getPropertyValue('--blue-m').trim() || '#378ADD';
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const teal = '#1a9988';
-  const green = '#16a34a';
+  const orange = styles.getPropertyValue('--orange').trim() || '#d85a30';
 
   const hasRain = rainData && rainData.length > 0;
   const hasIrrigation = irrigationData && irrigationData.length > 0;
@@ -122,8 +122,8 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
               type: 'bar' as const,
               label: 'Daily Irrigation (mm)',
               data: labels.map((date) => irrigMap.get(date)?.depthMm ?? 0),
-              backgroundColor: `${green}70`,
-              borderColor: green,
+              backgroundColor: `${orange}70`,
+              borderColor: orange,
               borderWidth: 1,
               borderRadius: 3,
               yAxisID: 'yRain',
@@ -168,7 +168,7 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
               type: 'line' as const,
               label: 'Cumulative Irrigation (mm)',
               data: labels.map((date) => cumIrrigByDate.get(date) ?? null),
-              borderColor: green,
+              borderColor: orange,
               backgroundColor: 'transparent',
               borderWidth: 2,
               borderDash: [3, 2],
@@ -186,7 +186,7 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
       labels: labels.map((d) => format(parseISO(d), 'MMM d')),
       datasets,
     };
-  }, [data, rainData, irrigationData, blue, blueM, teal, green, hasRain, hasIrrigation, labels, rainMap, irrigMap, cumIrrigByDate]);
+  }, [data, rainData, irrigationData, blue, blueM, teal, orange, hasRain, hasIrrigation, labels, rainMap, irrigMap, cumIrrigByDate]);
 
   const scales: ChartOptions<'bar'>['scales'] = {
     x: {
@@ -216,8 +216,8 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
     // Left inner axis: Daily Rain / Irrigation (shared scale)
     scales.yRain = {
       position: 'left',
-      title: { display: true, text: hasIrrigation && hasRain ? 'Rain / Irrig. (mm)' : hasIrrigation ? 'Irrigation (mm)' : 'Daily Rain (mm)', font: { size: 10 }, color: hasIrrigation ? green : teal },
-      ticks: { font: { size: 9 }, color: hasIrrigation ? green : teal },
+      title: { display: true, text: hasIrrigation && hasRain ? 'Rain / Irrig. (mm)' : hasIrrigation ? 'Irrigation (mm)' : 'Daily Rain (mm)', font: { size: 10 }, color: hasIrrigation ? orange : teal },
+      ticks: { font: { size: 9 }, color: hasIrrigation ? orange : teal },
       grid: { display: false },
       beginAtZero: true,
       max: dailyRainMax,
@@ -308,8 +308,8 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
           )}
           {hasIrrigation && (
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: green }}>Irrig. Cum.</div>
-              <div className="text-base font-semibold" style={{ color: green }}>
+              <div className="text-[11px] opacity-75" style={{ color: orange }}>Irrig. Cum.</div>
+              <div className="text-base font-semibold" style={{ color: orange }}>
                 {lastCumIrrig.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
               </div>
             </div>
