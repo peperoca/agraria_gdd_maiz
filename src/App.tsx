@@ -8,13 +8,14 @@ import { AdminPanel } from './components/AdminPanel';
 import { FarmForm } from './components/FarmForm';
 import { FarmSwitcher } from './components/FarmSwitcher';
 import { NdviImageView } from './components/NdviImageView';
+import { IrrigationPanel } from './components/IrrigationPanel';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
 import type { Field, Farm, User, FieldPolygon } from './types';
 import type { CropType } from './utils/cropConfig';
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => isLoggedIn());
@@ -138,6 +139,7 @@ function App() {
               else if (view === 'edit-field') setView('field-detail');
               else if (view === 'admin') setView('dashboard');
               else if (view === 'add-farm') setView('dashboard');
+              else if (view === 'irrigation') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
@@ -192,6 +194,17 @@ function App() {
 
           {view === 'dashboard' && (
             <>
+              {currentFarm && (
+                <button
+                  onClick={() => setView('irrigation')}
+                  className="text-white/80 hover:text-white p-1.5"
+                  title="Irrigation"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21c-4.418 0-8-3.134-8-7 0-4.5 8-11 8-11s8 6.5 8 11c0 3.866-3.582 7-8 7z" />
+                  </svg>
+                </button>
+              )}
               {user?.role === 'admin' && (
                 <button
                   onClick={() => setView('admin')}
@@ -271,6 +284,9 @@ function App() {
 
       {/* Content */}
       <main className="p-[14px]">
+        {view === 'irrigation' && currentFarm && (
+          <IrrigationPanel farm={currentFarm} fields={fields} />
+        )}
         {view === 'admin' && <AdminPanel />}
         {view === 'add-farm' && (
           <FarmForm onSubmit={handleCreateFarm} onCancel={() => setView('dashboard')} />

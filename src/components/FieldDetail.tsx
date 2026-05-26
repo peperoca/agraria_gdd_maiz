@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, SoilMoistureReading } from '../types';
+import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData, getSoilMoistureData } from '../utils/api';
+import { getNdviData, getSoilMoistureData, getIrrigationReadings } from '../utils/api';
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
@@ -36,6 +36,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
   const [gapPref, setGapPref] = useState<GapFillPreference>('carry_forward');
   const [soilMoistureData, setSoilMoistureData] = useState<SoilMoistureReading[] | null>(null);
+  const [irrigationData, setIrrigationData] = useState<DailyIrrigation[] | null>(null);
 
   const kcParams: KcParams = useMemo(
     () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
@@ -97,6 +98,15 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       })
       .catch(() => setSoilMoistureData(null));
   }, [field.id, field.polygon]);
+
+  // Fetch irrigation readings for this field
+  useEffect(() => {
+    getIrrigationReadings(field.id, field.sowingDate)
+      .then((raw) => {
+        setIrrigationData(raw.map((r) => ({ date: r.date, depthMm: r.depth_mm })));
+      })
+      .catch(() => setIrrigationData(null));
+  }, [field.id, field.sowingDate]);
 
   // Calculate ETc when both ETo and NDVI are available (recalculates on formula change)
   useEffect(() => {
@@ -334,7 +344,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
       {/* Water Balance Chart (Rain vs ETc) */}
       {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (
-        <WaterBalanceChart etcData={etcData} rainData={rainData} />
+        <WaterBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} />
       )}
 
       {/* Soil Moisture Chart (Sentinel-1) */}

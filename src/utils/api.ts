@@ -258,6 +258,93 @@ export async function getSoilMoistureData(fieldId: number): Promise<SoilMoisture
   return apiFetch<SoilMoistureReadingRaw[]>(`soil-moisture.php?field_id=${fieldId}`);
 }
 
+// --- Irrigation ---
+
+export interface IrrigationEquipmentRaw {
+  id: number;
+  farm_id: number;
+  name: string;
+  serial_number: string | null;
+  report_url: string | null;
+  type: string;
+  is_active: number;
+  created_at: string;
+}
+
+export interface IrrigationAssignmentRaw {
+  id: number;
+  equipment_id: number;
+  equipment_name?: string;
+  field_id: number;
+  field_name?: string;
+  start_date: string;
+  end_date: string | null;
+  created_at: string;
+}
+
+export interface IrrigationReadingRaw {
+  date: string;
+  depth_mm: number;
+}
+
+export async function getIrrigationEquipment(farmId: number): Promise<IrrigationEquipmentRaw[]> {
+  return apiFetch<IrrigationEquipmentRaw[]>(`irrigation-equipment.php?farm_id=${farmId}`);
+}
+
+export async function createIrrigationEquipment(data: {
+  farm_id: number; name: string; serial_number?: string; report_url?: string; type?: string;
+}): Promise<IrrigationEquipmentRaw> {
+  return apiFetch<IrrigationEquipmentRaw>('irrigation-equipment.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateIrrigationEquipment(id: number, data: Record<string, unknown>): Promise<IrrigationEquipmentRaw> {
+  return apiFetch<IrrigationEquipmentRaw>(`irrigation-equipment.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteIrrigationEquipment(id: number): Promise<{ success: boolean }> {
+  return apiFetch(`irrigation-equipment.php?id=${id}`, { method: 'DELETE' });
+}
+
+export async function getIrrigationAssignments(params: { equipment_id?: number; field_id?: number }): Promise<IrrigationAssignmentRaw[]> {
+  const qs = new URLSearchParams();
+  if (params.equipment_id) qs.set('equipment_id', String(params.equipment_id));
+  if (params.field_id) qs.set('field_id', String(params.field_id));
+  return apiFetch<IrrigationAssignmentRaw[]>(`irrigation-assignments.php?${qs}`);
+}
+
+export async function createIrrigationAssignment(data: {
+  equipment_id: number; field_id: number; start_date: string; end_date?: string | null;
+}): Promise<IrrigationAssignmentRaw> {
+  return apiFetch<IrrigationAssignmentRaw>('irrigation-assignments.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateIrrigationAssignment(id: number, data: Record<string, unknown>): Promise<{ success: boolean }> {
+  return apiFetch(`irrigation-assignments.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteIrrigationAssignment(id: number): Promise<{ success: boolean }> {
+  return apiFetch(`irrigation-assignments.php?id=${id}`, { method: 'DELETE' });
+}
+
+export async function getIrrigationReadings(fieldId: number, from?: string, to?: string): Promise<IrrigationReadingRaw[]> {
+  const qs = new URLSearchParams({ field_id: String(fieldId) });
+  if (from) qs.set('from', from);
+  if (to) qs.set('to', to);
+  return apiFetch<IrrigationReadingRaw[]>(`irrigation-readings.php?${qs}`);
+}
+
 // --- Admin ---
 
 import type { AdminUser, AdminStation } from '../types';

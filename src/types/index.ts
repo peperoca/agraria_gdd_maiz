@@ -150,6 +150,33 @@ export interface SoilMoistureReading {
   vvWet: number | null;      // Running max VV at computation time
 }
 
+export interface IrrigationEquipment {
+  id: number;
+  farmId: number;
+  name: string;
+  serialNumber: string | null;
+  reportUrl: string | null;
+  type: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface IrrigationAssignment {
+  id: number;
+  equipmentId: number;
+  equipmentName?: string;
+  fieldId: number;
+  fieldName?: string;
+  startDate: string;
+  endDate: string | null;
+  createdAt: string;
+}
+
+export interface DailyIrrigation {
+  date: string;
+  depthMm: number;
+}
+
 export interface AppSettings {
   stationMac: string;
   stationName: string;
