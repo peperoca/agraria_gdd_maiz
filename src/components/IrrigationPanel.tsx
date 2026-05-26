@@ -3,6 +3,7 @@ import type { Farm, Field, IrrigationEquipment, IrrigationAssignment } from '../
 import {
   getIrrigationEquipment,
   createIrrigationEquipment,
+  updateIrrigationEquipment,
   deleteIrrigationEquipment,
   getIrrigationAssignments,
   createIrrigationAssignment,
@@ -72,6 +73,13 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
   const [assignFieldId, setAssignFieldId] = useState<number | null>(null);
   const [assignStartDate, setAssignStartDate] = useState('');
   const [assignEndDate, setAssignEndDate] = useState('');
+
+  // Edit equipment
+  const [editingEquipId, setEditingEquipId] = useState<number | null>(null);
+  const [editEquipName, setEditEquipName] = useState('');
+  const [editEquipSerial, setEditEquipSerial] = useState('');
+  const [editEquipArea, setEditEquipArea] = useState('');
+  const [editEquipUrl, setEditEquipUrl] = useState('');
 
   // Edit assignment
   const [editingAssignment, setEditingAssignment] = useState<IrrigationAssignment | null>(null);
@@ -146,6 +154,33 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
       if (expandedId === id) setExpandedId(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete equipment');
+    }
+  };
+
+  const startEditEquipment = (equip: IrrigationEquipment) => {
+    setEditingEquipId(equip.id);
+    setEditEquipName(equip.name);
+    setEditEquipSerial(equip.serialNumber || '');
+    setEditEquipArea(equip.areaHa ? String(equip.areaHa) : '');
+    setEditEquipUrl(equip.reportUrl || '');
+  };
+
+  const handleSaveEquipment = async () => {
+    if (!editingEquipId) return;
+    setSaving(true);
+    try {
+      await updateIrrigationEquipment(editingEquipId, {
+        name: editEquipName.trim(),
+        serial_number: editEquipSerial.trim() || null,
+        area_ha: editEquipArea ? parseFloat(editEquipArea) : null,
+        report_url: editEquipUrl.trim() || null,
+      });
+      setEditingEquipId(null);
+      await fetchEquipment();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update equipment');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -349,12 +384,52 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
               </div>
             </div>
 
-            {/* Expanded: assignments + actions */}
+            {/* Expanded: edit + assignments + actions */}
             {isExpanded && (
               <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '0.5px solid var(--bdr)' }}>
+                {/* Equipment edit form */}
+                {editingEquipId === equip.id ? (
+                  <div className="p-2 rounded space-y-1.5" style={{ background: 'var(--surface2)' }}>
+                    <div className="sec-label" style={{ margin: 0 }}>Edit Equipment</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Name</label>
+                        <input type="text" value={editEquipName} onChange={(e) => setEditEquipName(e.target.value)} className="agraria-input w-full" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Serial</label>
+                        <input type="text" value={editEquipSerial} onChange={(e) => setEditEquipSerial(e.target.value)} className="agraria-input w-full" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Area (ha)</label>
+                        <input type="number" step="0.01" value={editEquipArea} onChange={(e) => setEditEquipArea(e.target.value)} placeholder="e.g. 65.5" className="agraria-input w-full" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Report URL</label>
+                      <input type="url" value={editEquipUrl} onChange={(e) => setEditEquipUrl(e.target.value)} className="agraria-input w-full text-[10px]" />
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={handleSaveEquipment} disabled={saving} className="text-[10px] px-3 py-1 rounded font-medium" style={{ background: 'var(--orange)', color: '#fff' }}>
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditingEquipId(null)} className="text-[10px] px-3 py-1 rounded font-medium" style={{ color: 'var(--tx3)' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="flex items-center justify-between">
                   <div className="sec-label" style={{ margin: 0 }}>Field Assignments</div>
                   <div className="flex gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startEditEquipment(equip); }}
+                      className="text-[10px] px-2 py-0.5 rounded font-medium"
+                      style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setAddingAssignmentFor(isAddingAssignment ? null : equip.id); }}
                       className="text-[10px] px-2 py-0.5 rounded font-medium"
