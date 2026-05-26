@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { FieldForm } from './components/FieldForm';
 import { FieldDetail } from './components/FieldDetail';
@@ -29,6 +29,8 @@ function App() {
   const [stations, setStations] = useState<StationInfo[]>([]);
   const [ndviImageDate, setNdviImageDate] = useState<string | undefined>(undefined);
   const [ndviDataForImage, setNdviDataForImage] = useState<import('./types').NdviReading[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const fetchFarms = useCallback(async () => {
     try {
@@ -41,6 +43,18 @@ function App() {
       setFarms([]);
     }
   }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
 
   // Fetch stations, user info, and farms when authenticated
   useEffect(() => {
@@ -193,52 +207,72 @@ function App() {
           </button>
 
           {view === 'dashboard' && (
-            <>
-              {currentFarm && (
-                <button
-                  onClick={() => setView('irrigation')}
-                  className="text-white/80 hover:text-white p-1.5"
-                  title="Irrigation"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21c-4.418 0-8-3.134-8-7 0-4.5 8-11 8-11s8 6.5 8 11c0 3.866-3.582 7-8 7z" />
-                  </svg>
-                </button>
-              )}
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => setView('admin')}
-                  className="text-white/80 hover:text-white p-1.5"
-                  title="Admin Panel"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </button>
-              )}
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={() => setView('settings')}
+                onClick={() => setMenuOpen((p) => !p)}
                 className="text-white/80 hover:text-white p-1.5"
-                title="Settings"
+                title="Menu"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
-              {currentFarm && (
-                <button
-                  onClick={() => {
-                    setSelectedFieldId(null);
-                    setView('add-field');
-                  }}
-                  className="agraria-btn-orange text-xs"
-                  title="Add Field"
+              {menuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg py-1 z-50 min-w-[170px]"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--bdr2)' }}
                 >
-                  + Add Field
-                </button>
+                  {currentFarm && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setSelectedFieldId(null); setView('add-field'); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--orange)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Field
+                    </button>
+                  )}
+                  {currentFarm && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setView('irrigation'); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#1a9988' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21c-4.418 0-8-3.134-8-7 0-4.5 8-11 8-11s8 6.5 8 11c0 3.866-3.582 7-8 7z" />
+                      </svg>
+                      Irrigation
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setMenuOpen(false); setView('settings'); }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                    style={{ color: 'var(--tx)' }}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--tx3)' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                  </button>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setView('admin'); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--tx3)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Admin
+                    </button>
+                  )}
+                </div>
               )}
-            </>
+            </div>
           )}
           {view === 'field-detail' && selectedField && (
             <>
