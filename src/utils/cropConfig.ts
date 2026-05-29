@@ -1,13 +1,14 @@
 import type { CornStage } from '../types';
 
 // ── Base crop species ──
-export type BaseCrop = 'corn' | 'soybean' | 'wheat';
+export type BaseCrop = 'corn' | 'soybean' | 'wheat' | 'rapeseed';
 
 // ── All valid crop type identifiers (compound: crop-maturity) ──
 export type CropType =
   | 'corn' | 'corn-short' | 'corn-intermediate' | 'corn-long'
   | 'soybean' | 'soybean-short' | 'soybean-intermediate' | 'soybean-long'
-  | 'wheat' | 'wheat-short' | 'wheat-intermediate' | 'wheat-long';
+  | 'wheat' | 'wheat-short' | 'wheat-intermediate' | 'wheat-long'
+  | 'rapeseed' | 'rapeseed-short' | 'rapeseed-intermediate' | 'rapeseed-long';
 
 export interface CropConfig {
   label: string;
@@ -111,7 +112,27 @@ const WHEAT_STAGES_SHORT = scaleStages(WHEAT_STAGES_INTERMEDIATE, 1500 / 1750, 2
 const WHEAT_STAGES_LONG = scaleStages(WHEAT_STAGES_INTERMEDIATE, 2100 / 1750, 1000 / 500);
 
 // ═══════════════════════════════════════════════════════════════
-//  CROP CONFIGS (12 entries + 3 bare aliases)
+//  RAPESEED STAGES (baseline = intermediate at 1700 GDD, base 41°F/5°C)
+// ═══════════════════════════════════════════════════════════════
+const RAPESEED_STAGES_INTERMEDIATE: CornStage[] = [
+  { name: 'Emergence', shortName: 'E', gdd: 90, vd: 20, description: 'Cotyledons emerge from soil' },
+  { name: 'Rosette (2-4 leaves)', shortName: 'RS', gdd: 200, vd: 80, description: 'Rosette formation; leaves expanding flat' },
+  { name: 'Rosette (6-8 leaves)', shortName: 'R6', gdd: 400, vd: 250, description: 'Full rosette; preparing for vernalization' },
+  { name: 'Stem Elongation', shortName: 'SE', gdd: 650, vd: 500, description: 'Bolting begins; internodes elongating; vernalization must be met' },
+  { name: 'Inflorescence Emergence', shortName: 'IE', gdd: 850, vd: 500, description: 'Flower buds visible in terminal cluster' },
+  { name: 'First Flower', shortName: 'FF', gdd: 1000, vd: 500, description: '10% flowers open; critical yield determination begins' },
+  { name: 'Full Flowering', shortName: 'FL', gdd: 1150, vd: 500, description: '50%+ flowers open; peak pollination' },
+  { name: 'Pod Development', shortName: 'PD', gdd: 1350, vd: 500, description: 'Siliques elongating; seeds developing' },
+  { name: 'Seed Filling', shortName: 'SF', gdd: 1500, vd: 500, description: 'Seeds filling; turning from green to brown' },
+  { name: 'Maturity', shortName: 'MT', gdd: 1700, vd: 500, description: 'Seeds dark brown/black; pods dry; harvest ready' },
+];
+
+// Spring rapeseed: no vernalization needed (Vd factor = 0)
+const RAPESEED_STAGES_SHORT = scaleStages(RAPESEED_STAGES_INTERMEDIATE, 1400 / 1700, 0);
+const RAPESEED_STAGES_LONG = scaleStages(RAPESEED_STAGES_INTERMEDIATE, 2100 / 1700, 800 / 500);
+
+// ═══════════════════════════════════════════════════════════════
+//  CROP CONFIGS (16 entries + 4 bare aliases)
 // ═══════════════════════════════════════════════════════════════
 export const CROP_CONFIGS: Record<CropType, CropConfig> = {
   // ── Corn ──
@@ -278,6 +299,61 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMin: 0.30,
     ndviMax: 0.85,
   },
+
+  // ── Rapeseed (Canola) ──
+  'rapeseed-short': {
+    label: 'Rapeseed — Short (Spring)',
+    baseCrop: 'rapeseed',
+    maturityLabel: 'Short / Spring (~1400 GDD)',
+    baseTempF: 41,
+    upperCapF: 86,
+    maturityGdd: 1400,
+    stages: RAPESEED_STAGES_SHORT,
+    vernalizationTarget: 0,
+    kcMax: 1.15,
+    kcMin: 0.35,
+    ndviMax: 0.85,
+  },
+  'rapeseed-intermediate': {
+    label: 'Rapeseed — Intermediate',
+    baseCrop: 'rapeseed',
+    maturityLabel: 'Intermediate (~1700 GDD)',
+    baseTempF: 41,
+    upperCapF: 86,
+    maturityGdd: 1700,
+    stages: RAPESEED_STAGES_INTERMEDIATE,
+    vernalizationTarget: 300,
+    kcMax: 1.15,
+    kcMin: 0.35,
+    ndviMax: 0.85,
+  },
+  'rapeseed-long': {
+    label: 'Rapeseed — Long (Winter)',
+    baseCrop: 'rapeseed',
+    maturityLabel: 'Long / Winter (~2100 GDD)',
+    baseTempF: 41,
+    upperCapF: 86,
+    maturityGdd: 2100,
+    stages: RAPESEED_STAGES_LONG,
+    vernalizationTarget: 800,
+    kcMax: 1.15,
+    kcMin: 0.35,
+    ndviMax: 0.85,
+  },
+  // bare alias → intermediate
+  rapeseed: {
+    label: 'Rapeseed — Intermediate',
+    baseCrop: 'rapeseed',
+    maturityLabel: 'Intermediate (~1700 GDD)',
+    baseTempF: 41,
+    upperCapF: 86,
+    maturityGdd: 1700,
+    stages: RAPESEED_STAGES_INTERMEDIATE,
+    vernalizationTarget: 300,
+    kcMax: 1.15,
+    kcMin: 0.35,
+    ndviMax: 0.85,
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -289,6 +365,7 @@ export function getBaseCrop(cropType: string): BaseCrop {
   if (cropType.startsWith('corn')) return 'corn';
   if (cropType.startsWith('soybean')) return 'soybean';
   if (cropType.startsWith('wheat')) return 'wheat';
+  if (cropType.startsWith('rapeseed')) return 'rapeseed';
   return 'corn'; // fallback
 }
 
@@ -297,6 +374,7 @@ export function normalizeCropType(cropType: string): CropType {
   if (cropType === 'corn') return 'corn-intermediate';
   if (cropType === 'soybean') return 'soybean-intermediate';
   if (cropType === 'wheat') return 'wheat-intermediate';
+  if (cropType === 'rapeseed') return 'rapeseed-intermediate';
   if (cropType in CROP_CONFIGS) return cropType as CropType;
   return 'corn-intermediate';
 }
@@ -316,6 +394,8 @@ export function getKeyStages(cropType: string): string[] {
       return ['VE', 'V3', 'R1', 'R3', 'R5', 'R7', 'R8'];
     case 'wheat':
       return ['E', 'T', 'SE', 'HD', 'AN', 'DG', 'MT'];
+    case 'rapeseed':
+      return ['E', 'RS', 'SE', 'FF', 'FL', 'PD', 'MT'];
   }
 }
 
@@ -336,4 +416,7 @@ export const CROP_DROPDOWN_OPTIONS: CropDropdownOption[] = [
   { value: 'wheat-short', label: 'Short / Spring (~1500 GDD)', group: 'Wheat' },
   { value: 'wheat-intermediate', label: 'Intermediate (~1750 GDD)', group: 'Wheat' },
   { value: 'wheat-long', label: 'Long / Winter (~2100 GDD)', group: 'Wheat' },
+  { value: 'rapeseed-short', label: 'Short / Spring (~1400 GDD)', group: 'Rapeseed' },
+  { value: 'rapeseed-intermediate', label: 'Intermediate (~1700 GDD)', group: 'Rapeseed' },
+  { value: 'rapeseed-long', label: 'Long / Winter (~2100 GDD)', group: 'Rapeseed' },
 ];

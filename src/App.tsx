@@ -9,13 +9,14 @@ import { FarmForm } from './components/FarmForm';
 import { FarmSwitcher } from './components/FarmSwitcher';
 import { NdviImageView } from './components/NdviImageView';
 import { IrrigationPanel } from './components/IrrigationPanel';
+import { ShareManager } from './components/ShareManager';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
 import type { Field, Farm, User, FieldPolygon } from './types';
 import type { CropType } from './utils/cropConfig';
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => isLoggedIn());
@@ -86,6 +87,7 @@ function App() {
   }
 
   const currentFarm = farms.find((f) => f.id === currentFarmId) ?? null;
+  const canWrite = !currentFarm || currentFarm.access === 'owner' || currentFarm.access === 'admin' || !currentFarm.access;
   const selectedField = fields.find((f) => f.id === selectedFieldId) ?? null;
 
   const handleAddField = async (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => {
@@ -154,6 +156,7 @@ function App() {
               else if (view === 'admin') setView('dashboard');
               else if (view === 'add-farm') setView('dashboard');
               else if (view === 'irrigation') setView('dashboard');
+              else if (view === 'share-farm') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
@@ -223,7 +226,7 @@ function App() {
                   className="absolute right-0 top-full mt-1 rounded-lg shadow-lg py-1 z-50 min-w-[170px]"
                   style={{ background: 'var(--surface)', border: '1px solid var(--bdr2)' }}
                 >
-                  {currentFarm && (
+                  {currentFarm && canWrite && (
                     <button
                       onClick={() => { setMenuOpen(false); setSelectedFieldId(null); setView('add-field'); }}
                       className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
@@ -235,7 +238,7 @@ function App() {
                       Add Field
                     </button>
                   )}
-                  {currentFarm && (
+                  {currentFarm && canWrite && (
                     <button
                       onClick={() => { setMenuOpen(false); setView('irrigation'); }}
                       className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
@@ -245,6 +248,18 @@ function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21c-4.418 0-8-3.134-8-7 0-4.5 8-11 8-11s8 6.5 8 11c0 3.866-3.582 7-8 7z" />
                       </svg>
                       Irrigation
+                    </button>
+                  )}
+                  {currentFarm && canWrite && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setView('share-farm'); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6366f1' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                      Share Farm
                     </button>
                   )}
                   <button
@@ -274,7 +289,7 @@ function App() {
               )}
             </div>
           )}
-          {view === 'field-detail' && selectedField && (
+          {view === 'field-detail' && selectedField && canWrite && (
             <>
               <button
                 onClick={() => setView('edit-field')}
@@ -321,6 +336,9 @@ function App() {
         {view === 'irrigation' && currentFarm && (
           <IrrigationPanel farm={currentFarm} fields={fields} />
         )}
+        {view === 'share-farm' && currentFarm && (
+          <ShareManager entityType="farm" entityId={currentFarm.id} entityName={currentFarm.name} />
+        )}
         {view === 'admin' && <AdminPanel />}
         {view === 'add-farm' && (
           <FarmForm onSubmit={handleCreateFarm} onCancel={() => setView('dashboard')} />
@@ -363,6 +381,7 @@ function App() {
               }}
               stationMac={currentFarm?.stationMac}
               stationName={currentFarm?.stationName}
+              canWrite={canWrite}
             />
           )
         )}

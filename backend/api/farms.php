@@ -13,15 +13,43 @@ $user = authenticate();
 $db = getDB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $stmt = $db->prepare("
-        SELECT f.id, f.name, f.latitude, f.longitude,
-               s.mac AS station_mac, s.name AS station_name, f.created_at
-        FROM farms f
-        LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
-        WHERE f.user_id = ?
-        ORDER BY f.name ASC
-    ");
-    $stmt->execute([$user['id']]);
+    if ($user['role'] === 'admin') {
+        // Admins see all farms
+        $stmt = $db->prepare("
+            SELECT f.id, f.name, f.latitude, f.longitude,
+                   s.mac AS station_mac, s.name AS station_name, f.created_at,
+                   u.username AS owner_username,
+                   CASE WHEN f.user_id = ? THEN 'owner' ELSE 'admin' END AS access
+            FROM farms f
+            LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
+            LEFT JOIN users u ON u.id = f.user_id
+            ORDER BY f.name ASC
+        ");
+        $stmt->execute([$user['id']]);
+    } else {
+        // Regular users: owned farms + shared farms
+        $stmt = $db->prepare("
+            SELECT f.id, f.name, f.latitude, f.longitude,
+                   s.mac AS station_mac, s.name AS station_name, f.created_at,
+                   NULL AS owner_username,
+                   'owner' AS access
+            FROM farms f
+            LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
+            WHERE f.user_id = ?
+            UNION
+            SELECT f.id, f.name, f.latitude, f.longitude,
+                   s.mac AS station_mac, s.name AS station_name, f.created_at,
+                   u.username AS owner_username,
+                   'shared' AS access
+            FROM farms f
+            JOIN shares sh ON sh.entity_type = 'farm' AND sh.entity_id = f.id AND sh.shared_with_id = ?
+            LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
+            LEFT JOIN users u ON u.id = f.user_id
+            ORDER BY access ASC, name ASC
+        ");
+        $stmt->execute([$user['id'], $user['id']]);
+    }
+
     $farms = $stmt->fetchAll();
 
     foreach ($farms as &$f) {
@@ -31,7 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $f['stationMac'] = $f['station_mac'];
         $f['stationName'] = $f['station_name'];
         $f['createdAt'] = $f['created_at'];
-        unset($f['station_mac'], $f['station_name'], $f['created_at']);
+        $f['ownerUsername'] = $f['owner_username'];
+        // access is already set from query
+        unset($f['station_mac'], $f['station_name'], $f['created_at'], $f['owner_username']);
     }
 
     json_response($farms);

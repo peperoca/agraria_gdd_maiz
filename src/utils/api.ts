@@ -115,6 +115,8 @@ export interface ServerFarm {
   stationMac: string | null;
   stationName: string | null;
   createdAt: string;
+  access?: 'owner' | 'shared' | 'admin';
+  ownerUsername?: string | null;
 }
 
 export async function getFarms(): Promise<ServerFarm[]> {
@@ -406,4 +408,42 @@ export async function deactivateStation(id: number): Promise<void> {
   await apiFetch(`admin/stations.php?id=${id}`, {
     method: 'DELETE',
   });
+}
+
+// --- Sharing ---
+
+export interface ShareRaw {
+  id: number;
+  entityType: 'farm' | 'field';
+  entityId: number;
+  ownerId: number;
+  sharedWithId: number;
+  sharedWithUsername: string;
+  createdAt: string;
+}
+
+export interface UserSearchResult {
+  id: number;
+  username: string;
+}
+
+export async function getShares(entityType: 'farm' | 'field', entityId: number): Promise<ShareRaw[]> {
+  return apiFetch<ShareRaw[]>(`shares.php?entity_type=${entityType}&entity_id=${entityId}`);
+}
+
+export async function createShare(entityType: 'farm' | 'field', entityId: number, sharedWithUsername: string): Promise<ShareRaw> {
+  return apiFetch<ShareRaw>('shares.php', {
+    method: 'POST',
+    body: JSON.stringify({ entityType, entityId, sharedWithUsername }),
+  });
+}
+
+export async function deleteShare(shareId: number): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`shares.php?id=${shareId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function searchUsers(query: string): Promise<UserSearchResult[]> {
+  return apiFetch<UserSearchResult[]>(`user-search.php?q=${encodeURIComponent(query)}`);
 }

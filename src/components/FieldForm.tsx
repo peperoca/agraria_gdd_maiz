@@ -50,7 +50,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
             onChange={(e) => setCropType(e.target.value as CropType)}
             className="agraria-input"
           >
-            {(['Corn', 'Soybean', 'Wheat'] as const).map((group) => (
+            {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
               <optgroup key={group} label={group}>
                 {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>

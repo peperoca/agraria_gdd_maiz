@@ -17,10 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $farmId = isset($_GET['farm_id']) ? (int) $_GET['farm_id'] : null;
 
     if ($farmId) {
-        // Verify farm ownership
-        $check = $db->prepare("SELECT id FROM farms WHERE id = ? AND user_id = ?");
-        $check->execute([$farmId, $user['id']]);
-        if (!$check->fetch()) json_error('Farm not found', 404);
+        // Verify read access to farm (owner, shared, or admin)
+        if (!can_read_farm($db, $farmId, $user)) json_error('Farm not found', 404);
 
         $stmt = $db->prepare("
             SELECT f.id, f.name, f.sowing_date AS sowingDate,
@@ -29,22 +27,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                    f.station_mac AS stationMac, f.farm_id AS farmId,
                    f.created_at AS createdAt
             FROM fields f
-            WHERE f.user_id = ? AND f.farm_id = ?
+            WHERE f.farm_id = ?
             ORDER BY f.created_at DESC
         ");
-        $stmt->execute([$user['id'], $farmId]);
+        $stmt->execute([$farmId]);
     } else {
-        $stmt = $db->prepare("
-            SELECT f.id, f.name, f.sowing_date AS sowingDate,
-                   COALESCE(f.crop_type, 'corn') AS cropType,
-                   f.polygon,
-                   f.station_mac AS stationMac, f.farm_id AS farmId,
-                   f.created_at AS createdAt
-            FROM fields f
-            WHERE f.user_id = ?
-            ORDER BY f.created_at DESC
-        ");
-        $stmt->execute([$user['id']]);
+        // All fields the user can see: owned + from shared farms + directly shared fields
+        if ($user['role'] === 'admin') {
+            $stmt = $db->query("
+                SELECT f.id, f.name, f.sowing_date AS sowingDate,
+                       COALESCE(f.crop_type, 'corn') AS cropType,
+                       f.polygon,
+                       f.station_mac AS stationMac, f.farm_id AS farmId,
+                       f.created_at AS createdAt
+                FROM fields f
+                ORDER BY f.created_at DESC
+            ");
+        } else {
+            $stmt = $db->prepare("
+                SELECT f.id, f.name, f.sowing_date AS sowingDate,
+                       COALESCE(f.crop_type, 'corn') AS cropType,
+                       f.polygon,
+                       f.station_mac AS stationMac, f.farm_id AS farmId,
+                       f.created_at AS createdAt
+                FROM fields f
+                WHERE f.user_id = ?
+                UNION
+                SELECT f.id, f.name, f.sowing_date AS sowingDate,
+                       COALESCE(f.crop_type, 'corn') AS cropType,
+                       f.polygon,
+                       f.station_mac AS stationMac, f.farm_id AS farmId,
+                       f.created_at AS createdAt
+                FROM fields f
+                JOIN shares sh ON sh.entity_type = 'farm' AND sh.entity_id = f.farm_id AND sh.shared_with_id = ?
+                UNION
+                SELECT f.id, f.name, f.sowing_date AS sowingDate,
+                       COALESCE(f.crop_type, 'corn') AS cropType,
+                       f.polygon,
+                       f.station_mac AS stationMac, f.farm_id AS farmId,
+                       f.created_at AS createdAt
+                FROM fields f
+                JOIN shares sh ON sh.entity_type = 'field' AND sh.entity_id = f.id AND sh.shared_with_id = ?
+                ORDER BY createdAt DESC
+            ");
+            $stmt->execute([$user['id'], $user['id'], $user['id']]);
+        }
     }
 
     $fields = $stmt->fetchAll();
@@ -73,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'corn', 'corn-short', 'corn-intermediate', 'corn-long',
         'soybean', 'soybean-short', 'soybean-intermediate', 'soybean-long',
         'wheat', 'wheat-short', 'wheat-intermediate', 'wheat-long',
+        'rapeseed', 'rapeseed-short', 'rapeseed-intermediate', 'rapeseed-long',
     ];
     if (!in_array($cropType, $validCropTypes)) json_error('Invalid crop type');
 

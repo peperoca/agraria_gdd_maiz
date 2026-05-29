@@ -19,6 +19,10 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../helpers.php';
 
+// Allow long execution for historical backfill
+set_time_limit(600); // 10 minutes
+ini_set('max_execution_time', '600');
+
 // Station timezone offset (UTC-3, no DST)
 $tzOffset = -3;
 $nowUtc = time();
@@ -111,8 +115,12 @@ foreach ($equipment as $equip) {
             $totalErrors++;
         }
 
-        // Rate limit: 1 second between requests
-        sleep(1);
+        // Flush output to keep connection alive during long backfills
+        if (ob_get_level()) ob_flush();
+        flush();
+
+        // Brief pause to avoid hammering AgSense
+        usleep(300000); // 0.3 seconds
         $current = date('Y-m-d', strtotime($current . ' +1 day'));
     }
 

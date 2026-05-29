@@ -164,3 +164,51 @@ function curl_fetch(string $url, int $timeout = 30): array {
     }
     return ['status' => $status, 'body' => $body, 'error' => ''];
 }
+
+/**
+ * Check if a user can read a farm (owner, shared, or admin).
+ */
+function can_read_farm(PDO $db, int $farmId, array $user): bool {
+    if ($user['role'] === 'admin') return true;
+    // Owner?
+    $stmt = $db->prepare("SELECT 1 FROM farms WHERE id = ? AND user_id = ?");
+    $stmt->execute([$farmId, $user['id']]);
+    if ($stmt->fetch()) return true;
+    // Shared?
+    $stmt = $db->prepare("SELECT 1 FROM shares WHERE entity_type='farm' AND entity_id = ? AND shared_with_id = ?");
+    $stmt->execute([$farmId, $user['id']]);
+    return (bool) $stmt->fetch();
+}
+
+/**
+ * Check if a user can read a field (owner, shared directly, farm shared, or admin).
+ */
+function can_read_field(PDO $db, int $fieldId, array $user): bool {
+    if ($user['role'] === 'admin') return true;
+    // Owner?
+    $stmt = $db->prepare("SELECT 1 FROM fields WHERE id = ? AND user_id = ?");
+    $stmt->execute([$fieldId, $user['id']]);
+    if ($stmt->fetch()) return true;
+    // Field shared directly?
+    $stmt = $db->prepare("SELECT 1 FROM shares WHERE entity_type='field' AND entity_id = ? AND shared_with_id = ?");
+    $stmt->execute([$fieldId, $user['id']]);
+    if ($stmt->fetch()) return true;
+    // Farm shared? (field inherits farm share)
+    $stmt = $db->prepare("
+        SELECT 1 FROM fields f
+        JOIN shares s ON s.entity_type='farm' AND s.entity_id = f.farm_id AND s.shared_with_id = ?
+        WHERE f.id = ?
+    ");
+    $stmt->execute([$user['id'], $fieldId]);
+    return (bool) $stmt->fetch();
+}
+
+/**
+ * Check if a user is the owner of a farm (or admin).
+ */
+function is_farm_owner(PDO $db, int $farmId, array $user): bool {
+    if ($user['role'] === 'admin') return true;
+    $stmt = $db->prepare("SELECT 1 FROM farms WHERE id = ? AND user_id = ?");
+    $stmt->execute([$farmId, $user['id']]);
+    return (bool) $stmt->fetch();
+}

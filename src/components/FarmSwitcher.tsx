@@ -20,6 +20,11 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
     );
   }
 
+  const ownedFarms = farms.filter((f) => !f.access || f.access === 'owner');
+  const sharedFarms = farms.filter((f) => f.access === 'shared');
+  const adminFarms = farms.filter((f) => f.access === 'admin');
+  const hasGroups = sharedFarms.length > 0 || adminFarms.length > 0;
+
   return (
     <select
       value={currentFarmId ?? ''}
@@ -35,14 +40,46 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
       style={{
         background: 'rgba(255,255,255,0.15)',
         color: '#fff',
-        maxWidth: '160px',
+        maxWidth: '180px',
       }}
     >
-      {farms.map((f) => (
-        <option key={f.id} value={f.id} style={{ color: '#000' }}>
-          {f.name}
-        </option>
-      ))}
+      {hasGroups ? (
+        <>
+          {ownedFarms.length > 0 && (
+            <optgroup label="My Farms" style={{ color: '#000' }}>
+              {ownedFarms.map((f) => (
+                <option key={f.id} value={f.id} style={{ color: '#000' }}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {sharedFarms.length > 0 && (
+            <optgroup label="Shared with me" style={{ color: '#000' }}>
+              {sharedFarms.map((f) => (
+                <option key={f.id} value={f.id} style={{ color: '#000' }}>
+                  {f.name}{f.ownerUsername ? ` (${f.ownerUsername})` : ''}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {adminFarms.length > 0 && (
+            <optgroup label="All Farms (Admin)" style={{ color: '#000' }}>
+              {adminFarms.map((f) => (
+                <option key={f.id} value={f.id} style={{ color: '#000' }}>
+                  {f.name}{f.ownerUsername ? ` (${f.ownerUsername})` : ''}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </>
+      ) : (
+        farms.map((f) => (
+          <option key={f.id} value={f.id} style={{ color: '#000' }}>
+            {f.name}
+          </option>
+        ))
+      )}
       <option value="__add__" style={{ color: '#000' }}>+ Add Farm...</option>
     </select>
   );

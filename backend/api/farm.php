@@ -16,9 +16,16 @@ $db = getDB();
 $farmId = (int) ($_GET['id'] ?? 0);
 if ($farmId <= 0) json_error('Farm ID is required');
 
-// Verify ownership
-$stmt = $db->prepare("SELECT id, name, latitude, longitude, station_id FROM farms WHERE id = ? AND user_id = ?");
-$stmt->execute([$farmId, $user['id']]);
+// For GET: allow owner, shared, or admin
+// For PUT/DELETE: allow only owner or admin
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (!can_read_farm($db, $farmId, $user)) json_error('Farm not found', 404);
+} else {
+    if (!is_farm_owner($db, $farmId, $user)) json_error('Farm not found', 404);
+}
+
+$stmt = $db->prepare("SELECT id, name, latitude, longitude, station_id FROM farms WHERE id = ?");
+$stmt->execute([$farmId]);
 $farm = $stmt->fetch();
 
 if (!$farm) json_error('Farm not found', 404);
@@ -74,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    // CASCADE will delete fields too
-    $stmt = $db->prepare("DELETE FROM farms WHERE id = ? AND user_id = ?");
-    $stmt->execute([$farmId, $user['id']]);
+    // CASCADE will delete fields too (ownership already verified above)
+    $stmt = $db->prepare("DELETE FROM farms WHERE id = ?");
+    $stmt->execute([$farmId]);
     json_response(['success' => true]);
 }

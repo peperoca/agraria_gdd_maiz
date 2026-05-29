@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         'corn', 'corn-short', 'corn-intermediate', 'corn-long',
         'soybean', 'soybean-short', 'soybean-intermediate', 'soybean-long',
         'wheat', 'wheat-short', 'wheat-intermediate', 'wheat-long',
+        'rapeseed', 'rapeseed-short', 'rapeseed-intermediate', 'rapeseed-long',
     ];
     if (!in_array($cropType, $validCropTypes)) json_error('Invalid crop type');
 

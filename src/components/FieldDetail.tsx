@@ -146,8 +146,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
     ? calculatePtu(gddData, farmLatitude)
     : null;
 
-  // Wheat: vernalization data (used for both alert and growth stage tracking)
-  const vernData = baseCrop === 'wheat' && gddData
+  // Wheat & Rapeseed: vernalization data (used for both alert and growth stage tracking)
+  const vernData = (baseCrop === 'wheat' || baseCrop === 'rapeseed') && gddData
     ? calculateCumulativeVernalization(gddData)
     : null;
 
@@ -363,8 +363,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {/* Growth stages */}
       {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} ptuData={ptuData} vernData={vernData} />}
 
-      {/* Wheat: Vernalization card */}
-      {baseCrop === 'wheat' && gddData && cropConfig.vernalizationTarget && (
+      {/* Wheat & Rapeseed: Vernalization card */}
+      {(baseCrop === 'wheat' || baseCrop === 'rapeseed') && gddData && !!cropConfig.vernalizationTarget && (
         <VernalizationCard gddData={gddData} target={cropConfig.vernalizationTarget} />
       )}
 

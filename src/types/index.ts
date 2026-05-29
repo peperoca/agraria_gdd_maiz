@@ -23,6 +23,18 @@ export interface Farm {
   stationMac: string | null;
   stationName: string | null;
   createdAt: string;
+  access?: 'owner' | 'shared' | 'admin';
+  ownerUsername?: string | null;
+}
+
+export interface Share {
+  id: number;
+  entityType: 'farm' | 'field';
+  entityId: number;
+  ownerId: number;
+  sharedWithId: number;
+  sharedWithUsername: string;
+  createdAt: string;
 }
 
 export type WeatherSource = 'station' | 'carry_forward' | 'fallback';

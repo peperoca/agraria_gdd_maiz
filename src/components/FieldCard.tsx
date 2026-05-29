@@ -13,6 +13,7 @@ const CROP_EMOJI: Record<string, string> = {
   corn: '🌽',
   soybean: '🫘',
   wheat: '🌾',
+  rapeseed: '🌻',
 };
 
 export function FieldCard({ field, onClick }: FieldCardProps) {
