@@ -79,6 +79,34 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
   const chartData = useMemo(() => ({
     labels: dates.map((d) => format(parseISO(d), 'MMM d')),
     datasets: [
+      // TAW line (left axis — toggleable)
+      {
+        type: 'line' as const,
+        label: 'TAW',
+        data: aswData.map(() => taw),
+        borderColor: teal,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6, 3],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        order: 9,
+      },
+      // MAD line (left axis — toggleable)
+      {
+        type: 'line' as const,
+        label: 'MAD',
+        data: aswData.map(() => latest.madThreshold),
+        borderColor: '#b45309',
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        order: 10,
+      },
       // ASW area fill — primary (left axis)
       {
         type: 'line' as const,
@@ -161,7 +189,7 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         order: 3,
         yAxisID: 'yCum',
       }] : []),
-      // Daily excess bars (right axis)
+      // Daily excess bars (left axis — same scale as ASW)
       {
         type: 'bar' as const,
         label: 'Excess',
@@ -169,8 +197,8 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         backgroundColor: '#06b6d480',
         borderColor: '#06b6d4',
         borderWidth: 1,
+        borderRadius: 2,
         order: 8,
-        yAxisID: 'yCum',
       },
       // Cumulative excess line (right axis)
       {
@@ -203,42 +231,6 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
       tooltip: {
         callbacks: {
           label: (ctx) => `${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toFixed(1)} mm`,
-        },
-      },
-      annotation: {
-        annotations: {
-          tawLine: {
-            type: 'line',
-            yMin: taw,
-            yMax: taw,
-            borderColor: teal,
-            borderWidth: 1.5,
-            borderDash: [6, 3],
-            label: {
-              display: true,
-              content: `TAW ${taw.toFixed(0)}`,
-              position: 'start',
-              font: { size: 9 },
-              color: teal,
-              backgroundColor: 'transparent',
-            },
-          },
-          madLine: {
-            type: 'line',
-            yMin: latest.madThreshold,
-            yMax: latest.madThreshold,
-            borderColor: '#b45309',
-            borderWidth: 1.5,
-            borderDash: [4, 4],
-            label: {
-              display: true,
-              content: `MAD ${latest.madThreshold.toFixed(0)}`,
-              position: 'start',
-              font: { size: 9 },
-              color: '#b45309',
-              backgroundColor: 'transparent',
-            },
-          },
         },
       },
     },
@@ -326,6 +318,9 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
             </span>
           )}
           <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 12, height: 8, background: '#06b6d480', border: '1px solid #06b6d4', borderRadius: 2 }} /> Excess
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
             <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `1.5px dashed ${teal}` }} /> TAW
           </span>
           <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
@@ -347,9 +342,6 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
               <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px dashed ${orange}` }} /> Irrig.
             </span>
           )}
-          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
-            <span style={{ display: 'inline-block', width: 12, height: 8, background: '#06b6d480', border: '1px solid #06b6d4', borderRadius: 2 }} /> Excess
-          </span>
           <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
             <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed #06b6d4' }} /> Cum. Excess
           </span>
