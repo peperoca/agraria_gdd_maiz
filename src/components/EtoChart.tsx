@@ -81,8 +81,10 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
   const maxDailyEto = data.length > 0 ? Math.max(...data.map((d) => d.eto)) : 0;
   const maxDailyRain = hasRain ? Math.max(...rainData.map((r) => r.rain)) : 0;
   const maxDailyIrrig = hasIrrigation ? Math.max(...irrigationData.map((i) => i.depthMm)) : 0;
-  const dailyEtoMax = Math.ceil(maxDailyEto * 1.2 * 10) / 10; // round to 1 decimal
-  const dailyRainMax = hasRain || hasIrrigation ? Math.ceil(Math.max(maxDailyRain, maxDailyIrrig) * 1.2 * 10) / 10 : 10;
+  // ETo and irrigation share a scale (similar magnitude)
+  const dailyEtoIrrigMax = Math.ceil(Math.max(maxDailyEto, maxDailyIrrig) * 1.2 * 10) / 10;
+  // Rain gets its own scale (can be much larger)
+  const dailyRainMax = hasRain ? Math.ceil(maxDailyRain * 1.2 * 10) / 10 : 10;
 
   const chartData = useMemo(() => {
     const datasets = [
@@ -126,7 +128,7 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
               borderColor: orange,
               borderWidth: 1,
               borderRadius: 3,
-              yAxisID: 'yRain',
+              yAxisID: 'yEto',
               order: 2,
             },
           ]
@@ -193,14 +195,14 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
       ticks: { maxTicksLimit: 8, font: { size: 10 }, color: tx3 },
       grid: { display: false },
     },
-    // Left outer axis: Daily ETo
+    // Left outer axis: Daily ETo + Irrigation (similar magnitude)
     yEto: {
       position: 'left',
-      title: { display: true, text: 'Daily ETo (mm)', font: { size: 10 }, color: blueM },
+      title: { display: true, text: hasIrrigation ? 'ETo / Irrig. (mm)' : 'Daily ETo (mm)', font: { size: 10 }, color: blueM },
       ticks: { font: { size: 9 }, color: blueM },
       grid: { color: `${tx3}15` },
       beginAtZero: true,
-      max: dailyEtoMax,
+      max: dailyEtoIrrigMax,
     },
     // Right axis: Cumulative (shared scale for ETo & Rain comparison)
     yCum: {
@@ -212,12 +214,12 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
     },
   };
 
-  if (hasRain || hasIrrigation) {
-    // Left inner axis: Daily Rain / Irrigation (shared scale)
+  if (hasRain) {
+    // Left inner axis: Daily Rain (own scale — rain events can be much larger than ETo)
     scales.yRain = {
       position: 'left',
-      title: { display: true, text: hasIrrigation && hasRain ? 'Rain / Irrig. (mm)' : hasIrrigation ? 'Irrigation (mm)' : 'Daily Rain (mm)', font: { size: 10 }, color: hasIrrigation ? orange : teal },
-      ticks: { font: { size: 9 }, color: hasIrrigation ? orange : teal },
+      title: { display: true, text: 'Daily Rain (mm)', font: { size: 10 }, color: teal },
+      ticks: { font: { size: 9 }, color: teal },
       grid: { display: false },
       beginAtZero: true,
       max: dailyRainMax,
