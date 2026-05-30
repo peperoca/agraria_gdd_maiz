@@ -79,10 +79,10 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
   const chartData = useMemo(() => ({
     labels: dates.map((d) => format(parseISO(d), 'MMM d')),
     datasets: [
-      // ASW area fill — primary
+      // ASW area fill — primary (left axis)
       {
         type: 'line' as const,
-        label: 'ASW (mm)',
+        label: 'ASW',
         data: aswData.map((d) => d.asw),
         borderColor: '#3b82f6',
         backgroundColor: '#3b82f620',
@@ -93,10 +93,35 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         fill: true,
         order: 0,
       },
-      // Cumulative Rain
+      // Daily ETc bars (left axis — same scale as ASW)
+      {
+        type: 'bar' as const,
+        label: 'Daily ETc',
+        data: aswData.map((d) => d.etc > 0 ? d.etc : null),
+        backgroundColor: `${red}60`,
+        borderColor: red,
+        borderWidth: 1,
+        borderRadius: 2,
+        order: 6,
+      },
+      // Daily Irrigation bars (left axis — same scale as ASW)
+      ...(hasIrrigation ? [{
+        type: 'bar' as const,
+        label: 'Daily Irrig.',
+        data: dates.map((d) => {
+          const irr = irrigMap.get(d);
+          return irr && irr.depthMm > 0 ? irr.depthMm : null;
+        }),
+        backgroundColor: `${orange}60`,
+        borderColor: orange,
+        borderWidth: 1,
+        borderRadius: 2,
+        order: 7,
+      }] : []),
+      // Cumulative Rain (right axis)
       {
         type: 'line' as const,
-        label: 'Cum. Rain (mm)',
+        label: 'Cum. Rain',
         data: dates.map((d) => rainMap.get(d)?.cumulative ?? null),
         borderColor: teal,
         backgroundColor: 'transparent',
@@ -107,10 +132,10 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         order: 1,
         yAxisID: 'yCum',
       },
-      // Cumulative ETc
+      // Cumulative ETc (right axis)
       {
         type: 'line' as const,
-        label: 'Cum. ETc (mm)',
+        label: 'Cum. ETc',
         data: dates.map((d) => etcMap.get(d)?.cumulative ?? null),
         borderColor: red,
         backgroundColor: 'transparent',
@@ -121,10 +146,10 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         order: 2,
         yAxisID: 'yCum',
       },
-      // Cumulative Irrigation (if available)
+      // Cumulative Irrigation (right axis)
       ...(hasIrrigation ? [{
         type: 'line' as const,
-        label: 'Cum. Irrig. (mm)',
+        label: 'Cum. Irrig.',
         data: cumIrrigData,
         borderColor: orange,
         backgroundColor: 'transparent',
@@ -136,21 +161,21 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         order: 3,
         yAxisID: 'yCum',
       }] : []),
-      // Daily excess bars
+      // Daily excess bars (right axis)
       {
         type: 'bar' as const,
-        label: 'Excess (mm)',
+        label: 'Excess',
         data: aswData.map((d) => d.excess > 0 ? d.excess : null),
         backgroundColor: '#06b6d480',
         borderColor: '#06b6d4',
         borderWidth: 1,
-        order: 5,
+        order: 8,
         yAxisID: 'yCum',
       },
-      // Cumulative excess line
+      // Cumulative excess line (right axis)
       {
         type: 'line' as const,
-        label: 'Cum. Excess (mm)',
+        label: 'Cum. Excess',
         data: aswData.map((d) => d.cumulativeExcess > 0 ? d.cumulativeExcess : null),
         borderColor: '#06b6d4',
         backgroundColor: 'transparent',
@@ -163,7 +188,7 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         yAxisID: 'yCum',
       },
     ],
-  }), [aswData, dates, rainMap, etcMap, cumIrrigData, teal, red, orange, hasIrrigation]);
+  }), [aswData, dates, rainMap, etcMap, irrigMap, cumIrrigData, teal, red, orange, hasIrrigation]);
 
   const options: ChartOptions<'bar'> = {
     responsive: true,
@@ -171,9 +196,7 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
     interaction: { intersect: false, mode: 'index' },
     plugins: {
       legend: {
-        display: true,
-        position: 'top',
-        labels: { usePointStyle: true, font: { size: 10 }, color: tx3 },
+        display: false,
       },
       tooltip: {
         callbacks: {
@@ -283,10 +306,53 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         {/* @ts-expect-error mixed chart type */}
         <Chart type="line" data={chartData} options={options} />
       </div>
-      <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        ASW = Available Soil Water (left axis, 0–TAW). Cumulative Rain, ETc{hasIrrigation ? ', Irrigation' : ''} on right axis.
-        Dashed lines: TAW (field capacity) and MAD (irrigation threshold). Teal bars = excess (drainage).
-      </p>
+      {/* Manual legend with axis references */}
+      <div className="mt-2 space-y-1">
+        <div className="text-[10px] font-medium" style={{ color: 'var(--tx2)' }}>
+          Left axis — ASW (mm):
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 12, height: 8, background: '#3b82f620', border: '1.5px solid #3b82f6', borderRadius: 2 }} /> ASW
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 12, height: 8, background: `${red}60`, border: `1px solid ${red}`, borderRadius: 2 }} /> Daily ETc
+          </span>
+          {hasIrrigation && (
+            <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+              <span style={{ display: 'inline-block', width: 12, height: 8, background: `${orange}60`, border: `1px solid ${orange}`, borderRadius: 2 }} /> Daily Irrig.
+            </span>
+          )}
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `1.5px dashed ${teal}` }} /> TAW
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '1.5px dashed #b45309' }} /> MAD
+          </span>
+        </div>
+        <div className="text-[10px] font-medium mt-1" style={{ color: 'var(--tx2)' }}>
+          Right axis — Cumulative (mm):
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px solid ${teal}` }} /> Rain
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px solid ${red}` }} /> ETc
+          </span>
+          {hasIrrigation && (
+            <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+              <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: `2px dashed ${orange}` }} /> Irrig.
+            </span>
+          )}
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 12, height: 8, background: '#06b6d480', border: '1px solid #06b6d4', borderRadius: 2 }} /> Excess
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 16, height: 0, borderTop: '2px dashed #06b6d4' }} /> Cum. Excess
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
