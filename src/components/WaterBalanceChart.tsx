@@ -196,7 +196,9 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
     interaction: { intersect: false, mode: 'index' },
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top',
+        labels: { usePointStyle: true, font: { size: 10 }, color: tx3, boxWidth: 8 },
       },
       tooltip: {
         callbacks: {
