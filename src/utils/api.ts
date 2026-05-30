@@ -478,3 +478,28 @@ export async function getConeatSoils(full = false): Promise<ConeatSoilRaw[]> {
   const params = full ? '?full=1' : '';
   return apiFetch<ConeatSoilRaw[]>(`coneat-soils.php${params}`);
 }
+
+// --- Field Daily Overrides ---
+
+export interface FieldOverrideRaw {
+  date: string;
+  rain_mm: number | null;
+  irrigation_mm: number | null;
+}
+
+export async function getFieldOverrides(fieldId: number): Promise<FieldOverrideRaw[]> {
+  return apiFetch<FieldOverrideRaw[]>(`field-overrides.php?field_id=${fieldId}`);
+}
+
+export async function upsertFieldOverride(
+  fieldId: number, date: string, rainMm?: number | null, irrigationMm?: number | null,
+): Promise<void> {
+  await apiFetch('field-overrides.php', {
+    method: 'POST',
+    body: JSON.stringify({ field_id: fieldId, date, rain_mm: rainMm, irrigation_mm: irrigationMm }),
+  });
+}
+
+export async function deleteFieldOverride(fieldId: number, date: string): Promise<void> {
+  await apiFetch(`field-overrides.php?field_id=${fieldId}&date=${date}`, { method: 'DELETE' });
+}

@@ -3,7 +3,10 @@ import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData, getSoilMoistureData, getIrrigationReadings } from '../utils/api';
+import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride } from '../utils/api';
+import type { FieldOverride } from '../types';
+import { applyRainOverrides, applyIrrigationOverrides } from '../utils/applyOverrides';
+import { OverrideCalendar } from './OverrideCalendar';
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
@@ -38,6 +41,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const [gapPref, setGapPref] = useState<GapFillPreference>('carry_forward');
   const [soilMoistureData, setSoilMoistureData] = useState<SoilMoistureReading[] | null>(null);
   const [irrigationData, setIrrigationData] = useState<DailyIrrigation[] | null>(null);
+  const [overrides, setOverrides] = useState<FieldOverride[]>([]);
+  const [showOverrideCalendar, setShowOverrideCalendar] = useState(false);
 
   const kcParams: KcParams = useMemo(
     () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
@@ -109,6 +114,28 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       .catch(() => setIrrigationData(null));
   }, [field.id, field.sowingDate]);
 
+  // Fetch manual overrides for this field
+  const fetchOverrides = () => {
+    getFieldOverrides(field.id)
+      .then((raw) => setOverrides(raw.map((r) => ({
+        date: r.date,
+        rainMm: r.rain_mm,
+        irrigationMm: r.irrigation_mm,
+      }))))
+      .catch(() => setOverrides([]));
+  };
+  useEffect(fetchOverrides, [field.id]);
+
+  // Apply overrides to rain and irrigation data
+  const effectiveRain = useMemo(
+    () => rainData ? applyRainOverrides(rainData, overrides) : null,
+    [rainData, overrides],
+  );
+  const effectiveIrrigation = useMemo(
+    () => applyIrrigationOverrides(irrigationData, overrides),
+    [irrigationData, overrides],
+  );
+
   // Calculate ETc when both ETo and NDVI are available (recalculates on formula change)
   useEffect(() => {
     if (etoData && ndviData && ndviData.length > 0) {
@@ -162,14 +189,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
   // Soil water balance (bounded ASW) — only when TAW is set on the field
   const aswData = useMemo(() => {
-    if (!field.tawMm || !etcData || etcData.length === 0 || !rainData) return null;
+    if (!field.tawMm || !etcData || etcData.length === 0 || !effectiveRain) return null;
     const madFraction = field.madPct != null ? field.madPct / 100 : cropConfig.madDefault;
-    return computeWaterBalance(etcData, rainData, irrigationData, {
+    return computeWaterBalance(etcData, effectiveRain, effectiveIrrigation, {
       tawMm: field.tawMm,
       madFraction,
       initialAswMm: field.initialAswMm ?? undefined,
     });
-  }, [field.tawMm, field.madPct, field.initialAswMm, etcData, rainData, irrigationData, cropConfig.madDefault]);
+  }, [field.tawMm, field.madPct, field.initialAswMm, etcData, effectiveRain, effectiveIrrigation, cropConfig.madDefault]);
 
   // Soybean: photoperiod
   const photoAlert = baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod
@@ -325,7 +352,27 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
       {/* ETo + Rain Chart */}
       {etoData && etoData.length > 0 && (
-        <EtoChart data={etoData} rainData={rainData ?? undefined} irrigationData={irrigationData} />
+        <EtoChart data={etoData} rainData={effectiveRain ?? undefined} irrigationData={effectiveIrrigation} onTitleClick={() => setShowOverrideCalendar(true)} />
+      )}
+
+      {/* Override Calendar */}
+      {showOverrideCalendar && (
+        <OverrideCalendar
+          fieldId={field.id}
+          sowingDate={field.sowingDate}
+          rainData={rainData ?? []}
+          irrigationData={irrigationData}
+          overrides={overrides}
+          onSave={async (date, rainMm, irrigMm) => {
+            await upsertFieldOverride(field.id, date, rainMm, irrigMm);
+            fetchOverrides();
+          }}
+          onDelete={async (date) => {
+            await deleteFieldOverride(field.id, date);
+            fetchOverrides();
+          }}
+          onClose={() => setShowOverrideCalendar(false)}
+        />
       )}
 
       {/* NDVI Chart + Kc Formula toggle */}
@@ -378,7 +425,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
       {/* Water Balance Chart (Rain vs ETc) */}
       {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (
-        <WaterBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} aswData={aswData} />
+        <WaterBalanceChart etcData={etcData} rainData={effectiveRain} irrigationData={effectiveIrrigation} aswData={aswData} />
       )}
 
       {/* Soil Moisture Chart (Sentinel-1) */}

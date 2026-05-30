@@ -34,9 +34,10 @@ interface EtoChartProps {
   data: DailyEto[];
   rainData?: DailyRain[];
   irrigationData?: DailyIrrigation[] | null;
+  onTitleClick?: () => void;
 }
 
-export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
+export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoChartProps) {
   const styles = getComputedStyle(document.documentElement);
   const blue = styles.getPropertyValue('--blue').trim() || '#185FA5';
   const blueM = styles.getPropertyValue('--blue-m').trim() || '#378ADD';
@@ -272,7 +273,13 @@ export function EtoChart({ data, rainData, irrigationData }: EtoChartProps) {
   return (
     <div className="agraria-card">
       <div className="flex items-center justify-between mb-1">
-        <div className="sec-label mb-0">{chartTitle}</div>
+        {onTitleClick ? (
+          <button onClick={onTitleClick} className="sec-label mb-0 cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+            {chartTitle} <span className="text-[10px] opacity-60">✏️</span>
+          </button>
+        ) : (
+          <div className="sec-label mb-0">{chartTitle}</div>
+        )}
       </div>
       {(lastEto || lastRain) && (
         <div className={`agraria-info-row grid gap-2 mb-3`} style={{ gridTemplateColumns: `repeat(${summaryColCount}, minmax(0, 1fr))` }}>

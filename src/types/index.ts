@@ -44,7 +44,7 @@ export interface Share {
   createdAt: string;
 }
 
-export type WeatherSource = 'station' | 'carry_forward' | 'fallback';
+export type WeatherSource = 'station' | 'carry_forward' | 'fallback' | 'manual';
 
 export interface WeatherReading {
   dateutc: number;        // Unix timestamp ms
@@ -217,6 +217,12 @@ export interface ConeatSoil {
   apdn: number;
   ip: number;
   geometry?: { type: string; coordinates: number[][][][] };
+}
+
+export interface FieldOverride {
+  date: string;
+  rainMm: number | null;
+  irrigationMm: number | null;
 }
 
 export interface AppSettings {
