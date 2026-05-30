@@ -13,6 +13,12 @@ export interface Field {
   stationName?: string;
   farmId?: number;
   createdAt: string;
+  // Soil water balance
+  tawMm: number | null;          // Total Available Water (mm) — FC minus PWP for root zone
+  madPct: number | null;         // Management Allowable Depletion override (0-100)
+  tawSource: 'coneat_mm' | 'coneat_apdn' | 'manual' | null;
+  coneatGc: string | null;       // CONEAT group code used
+  initialAswMm: number | null;   // Starting ASW (mm) — defaults to TAW
 }
 
 export interface Farm {
@@ -22,6 +28,7 @@ export interface Farm {
   longitude: number | null;
   stationMac: string | null;
   stationName: string | null;
+  stationDistanceKm?: number | null;
   createdAt: string;
   access?: 'owner' | 'shared' | 'admin';
   ownerUsername?: string | null;
@@ -106,11 +113,13 @@ export interface CornStage {
 }
 
 export interface StationInfo {
+  id?: number;
   mac: string;
   name: string;
   latitude: number;
   longitude: number;
   elevationM: number;
+  distanceKm?: number | null;
 }
 
 export interface User {
@@ -188,6 +197,26 @@ export interface IrrigationAssignment {
 export interface DailyIrrigation {
   date: string;
   depthMm: number;
+}
+
+export interface DailyASW {
+  date: string;
+  asw: number;              // Available Soil Water (mm), bounded 0–TAW
+  rain: number;             // Daily rain input (mm)
+  irrigation: number;       // Daily irrigation input (mm)
+  etc: number;              // Daily ETc (mm)
+  excess: number;           // Drainage/runoff when ASW would exceed TAW (mm)
+  cumulativeExcess: number; // Running total of excess from sowing
+  taw: number;              // Total Available Water reference (mm)
+  madThreshold: number;     // ASW level triggering irrigation advisory (mm)
+}
+
+export interface ConeatSoil {
+  gc_code: string;
+  mm: number;
+  apdn: number;
+  ip: number;
+  geometry?: { type: string; coordinates: number[][][][] };
 }
 
 export interface AppSettings {

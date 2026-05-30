@@ -94,15 +94,21 @@ export async function getMe(): Promise<{ id: number; username: string; email: st
 // --- Stations ---
 
 export interface StationInfo {
+  id?: number;
   mac: string;
   name: string;
   latitude: number;
   longitude: number;
   elevationM: number;
+  distanceKm?: number | null;
 }
 
 export async function getStations(): Promise<StationInfo[]> {
   return apiFetch<StationInfo[]>('stations.php');
+}
+
+export async function getStationsWithDistance(lat: number, lon: number): Promise<StationInfo[]> {
+  return apiFetch<StationInfo[]>(`stations.php?lat=${lat}&lon=${lon}`);
 }
 
 // --- Farms ---
@@ -114,6 +120,7 @@ export interface ServerFarm {
   longitude: number | null;
   stationMac: string | null;
   stationName: string | null;
+  stationDistanceKm?: number | null;
   createdAt: string;
   access?: 'owner' | 'shared' | 'admin';
   ownerUsername?: string | null;
@@ -155,6 +162,12 @@ export interface ServerField {
   stationName?: string;
   farmId?: number;
   createdAt: string;
+  // Soil water balance
+  tawMm?: number | null;
+  madPct?: number | null;
+  tawSource?: 'coneat_mm' | 'coneat_apdn' | 'manual' | null;
+  coneatGc?: string | null;
+  initialAswMm?: number | null;
 }
 
 export async function getFields(farmId?: number): Promise<ServerField[]> {
@@ -176,6 +189,9 @@ export async function createField(
 export async function updateField(id: number, data: {
   name?: string; sowingDate?: string; cropType?: string;
   polygon?: { type: 'Polygon'; coordinates: number[][][] } | null;
+  tawMm?: number | null; madPct?: number | null;
+  tawSource?: string | null; coneatGc?: string | null;
+  initialAswMm?: number | null;
 }): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'PUT',
@@ -446,4 +462,19 @@ export async function deleteShare(shareId: number): Promise<{ success: boolean }
 
 export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   return apiFetch<UserSearchResult[]>(`user-search.php?q=${encodeURIComponent(query)}`);
+}
+
+// --- CONEAT Soils ---
+
+export interface ConeatSoilRaw {
+  gc_code: string;
+  mm: number;
+  apdn: number;
+  ip: number;
+  geometry?: { type: string; coordinates: number[][][][] };
+}
+
+export async function getConeatSoils(full = false): Promise<ConeatSoilRaw[]> {
+  const params = full ? '?full=1' : '';
+  return apiFetch<ConeatSoilRaw[]>(`coneat-soils.php${params}`);
 }

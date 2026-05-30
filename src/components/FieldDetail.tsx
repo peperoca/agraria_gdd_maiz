@@ -7,6 +7,7 @@ import { getNdviData, getSoilMoistureData, getIrrigationReadings } from '../util
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
+import { computeWaterBalance } from '../utils/waterBalance';
 import { exportFieldCsv } from '../utils/exportCsv';
 import { exportFieldPdf } from '../utils/exportPdf';
 import { GddChart } from './GddChart';
@@ -159,6 +160,17 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       })()
     : null;
 
+  // Soil water balance (bounded ASW) — only when TAW is set on the field
+  const aswData = useMemo(() => {
+    if (!field.tawMm || !etcData || etcData.length === 0 || !rainData) return null;
+    const madFraction = field.madPct != null ? field.madPct / 100 : cropConfig.madDefault;
+    return computeWaterBalance(etcData, rainData, irrigationData, {
+      tawMm: field.tawMm,
+      madFraction,
+      initialAswMm: field.initialAswMm ?? undefined,
+    });
+  }, [field.tawMm, field.madPct, field.initialAswMm, etcData, rainData, irrigationData, cropConfig.madDefault]);
+
   // Soybean: photoperiod
   const photoAlert = baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod
     ? (() => {
@@ -267,6 +279,17 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {/* Crop alerts */}
       {vernAlert && <CropAlertBanner type={vernAlert.type} message={vernAlert.message} />}
       {photoAlert && <CropAlertBanner type={photoAlert.type} message={photoAlert.message} />}
+      {aswData && aswData.length > 0 && (() => {
+        const latest = aswData[aswData.length - 1];
+        if (latest.asw <= 0) {
+          return <CropAlertBanner type="critical" message={`Soil water at wilting point. Irrigate immediately — deficit: ${latest.taw.toFixed(0)} mm to reach field capacity.`} />;
+        }
+        if (latest.asw < latest.madThreshold) {
+          const deficit = Math.round(latest.taw - latest.asw);
+          return <CropAlertBanner type="warning" message={`Soil water below safety threshold (${Math.round(latest.asw / latest.taw * 100)}% available). Consider irrigating — deficit: ${deficit} mm to reach field capacity.`} />;
+        }
+        return null;
+      })()}
 
       {/* Export buttons */}
       {gddData && gddData.length > 0 && (
@@ -352,7 +375,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
       {/* Water Balance Chart (Rain vs ETc) */}
       {etcData && etcData.length > 0 && rainData && rainData.length > 0 && (
-        <WaterBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} />
+        <WaterBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} aswData={aswData} />
       )}
 
       {/* Soil Moisture Chart (Sentinel-1) */}

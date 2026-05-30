@@ -13,13 +13,23 @@ $user = authenticate();
 $db = getDB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Haversine distance SQL fragment (returns km between farm and station)
+    $distExpr = "CASE WHEN f.latitude IS NOT NULL AND s.latitude IS NOT NULL THEN
+        ROUND(6371 * acos(
+            cos(radians(f.latitude)) * cos(radians(s.latitude))
+            * cos(radians(s.longitude) - radians(f.longitude))
+            + sin(radians(f.latitude)) * sin(radians(s.latitude))
+        ), 1)
+        ELSE NULL END";
+
     if ($user['role'] === 'admin') {
         // Admins see all farms
         $stmt = $db->prepare("
             SELECT f.id, f.name, f.latitude, f.longitude,
                    s.mac AS station_mac, s.name AS station_name, f.created_at,
                    u.username AS owner_username,
-                   CASE WHEN f.user_id = ? THEN 'owner' ELSE 'admin' END AS access
+                   CASE WHEN f.user_id = ? THEN 'owner' ELSE 'admin' END AS access,
+                   $distExpr AS station_distance_km
             FROM farms f
             LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
             LEFT JOIN users u ON u.id = f.user_id
@@ -32,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             SELECT f.id, f.name, f.latitude, f.longitude,
                    s.mac AS station_mac, s.name AS station_name, f.created_at,
                    NULL AS owner_username,
-                   'owner' AS access
+                   'owner' AS access,
+                   $distExpr AS station_distance_km
             FROM farms f
             LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
             WHERE f.user_id = ?
@@ -40,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             SELECT f.id, f.name, f.latitude, f.longitude,
                    s.mac AS station_mac, s.name AS station_name, f.created_at,
                    u.username AS owner_username,
-                   'shared' AS access
+                   'shared' AS access,
+                   $distExpr AS station_distance_km
             FROM farms f
             JOIN shares sh ON sh.entity_type = 'farm' AND sh.entity_id = f.id AND sh.shared_with_id = ?
             LEFT JOIN stations s ON s.id = f.station_id AND s.is_active = 1
@@ -60,8 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $f['stationName'] = $f['station_name'];
         $f['createdAt'] = $f['created_at'];
         $f['ownerUsername'] = $f['owner_username'];
+        $f['stationDistanceKm'] = $f['station_distance_km'] !== null ? (float) $f['station_distance_km'] : null;
         // access is already set from query
-        unset($f['station_mac'], $f['station_name'], $f['created_at'], $f['owner_username']);
+        unset($f['station_mac'], $f['station_name'], $f['created_at'], $f['owner_username'], $f['station_distance_km']);
     }
 
     json_response($farms);
@@ -96,6 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$user['id'], $name, $lat, $lon, $stationId]);
     $farmId = (int) $db->lastInsertId();
 
+    $distKm = null;
+    if ($nearest && $lat !== null && $lon !== null) {
+        $distKm = round($nearest['distance_km'], 1);
+    }
+
     json_response([
         'id' => $farmId,
         'name' => $name,
@@ -103,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'longitude' => $lon,
         'stationMac' => $stationMac,
         'stationName' => $stationName,
+        'stationDistanceKm' => $distKm,
         'createdAt' => date('Y-m-d H:i:s'),
     ], 201);
 }

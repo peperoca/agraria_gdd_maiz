@@ -26,6 +26,11 @@ export function useFields(farmId?: number | null) {
           stationName: f.stationName,
           farmId: f.farmId,
           createdAt: f.createdAt,
+          tawMm: f.tawMm ?? null,
+          madPct: f.madPct ?? null,
+          tawSource: f.tawSource ?? null,
+          coneatGc: f.coneatGc ?? null,
+          initialAswMm: f.initialAswMm ?? null,
         }))
       );
     } catch (err) {

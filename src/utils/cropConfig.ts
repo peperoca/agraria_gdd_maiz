@@ -30,6 +30,10 @@ export interface CropConfig {
   kcMin: number;
   /** Maximum NDVI at full canopy for non-linear formula */
   ndviMax: number;
+  /** Effective rooting depth (m) — reference for soil water calculations */
+  rootingDepthM: number;
+  /** Management Allowable Depletion default (fraction 0-1) */
+  madDefault: number;
 }
 
 // ── Helper: scale stage GDD values proportionally ──
@@ -147,6 +151,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.20,
     kcMin: 0.30,
     ndviMax: 0.88,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   'corn-intermediate': {
     label: 'Corn — Intermediate',
@@ -159,6 +165,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.20,
     kcMin: 0.30,
     ndviMax: 0.88,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   'corn-long': {
     label: 'Corn — Long',
@@ -171,6 +179,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.20,
     kcMin: 0.30,
     ndviMax: 0.88,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   // bare alias → intermediate
   corn: {
@@ -184,6 +194,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.20,
     kcMin: 0.30,
     ndviMax: 0.88,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
 
   // ── Soybean ──
@@ -200,6 +212,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.40,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   'soybean-intermediate': {
     label: 'Soybean — Intermediate (MG V-VI)',
@@ -214,6 +228,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.40,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   'soybean-long': {
     label: 'Soybean — Long (MG VII-VIII)',
@@ -228,6 +244,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.40,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   // bare alias → intermediate
   soybean: {
@@ -243,6 +261,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.40,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
 
   // ── Wheat ──
@@ -258,6 +278,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.30,
     ndviMax: 0.85,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   'wheat-intermediate': {
     label: 'Wheat — Intermediate',
@@ -271,6 +293,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.30,
     ndviMax: 0.85,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   'wheat-long': {
     label: 'Wheat — Long (Winter)',
@@ -284,6 +308,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.30,
     ndviMax: 0.85,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
   // bare alias → intermediate
   wheat: {
@@ -298,6 +324,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.30,
     ndviMax: 0.85,
+    rootingDepthM: 1.2,
+    madDefault: 0.55,
   },
 
   // ── Rapeseed (Canola) ──
@@ -313,6 +341,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.35,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   'rapeseed-intermediate': {
     label: 'Rapeseed — Intermediate',
@@ -326,6 +356,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.35,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   'rapeseed-long': {
     label: 'Rapeseed — Long (Winter)',
@@ -339,6 +371,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.35,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
   // bare alias → intermediate
   rapeseed: {
@@ -353,6 +387,8 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     kcMax: 1.15,
     kcMin: 0.35,
     ndviMax: 0.85,
+    rootingDepthM: 1.0,
+    madDefault: 0.50,
   },
 };
 

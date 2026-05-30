@@ -13,23 +13,210 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import type { ChartOptions } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { format, parseISO } from 'date-fns';
-import type { DailyRain, DailyETc, DailyIrrigation } from '../types';
+import type { DailyRain, DailyETc, DailyIrrigation, DailyASW } from '../types';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarController, LineController,
-  PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler
+  PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler,
+  annotationPlugin
 );
 
 interface WaterBalanceChartProps {
   etcData: DailyETc[];
   rainData: DailyRain[];
   irrigationData?: DailyIrrigation[] | null;
+  /** When provided, renders bounded ASW chart instead of unbounded cumulative */
+  aswData?: DailyASW[] | null;
 }
 
-export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBalanceChartProps) {
+// ── Bounded ASW chart (when soil params are set) ──
+function ASWChart({ aswData }: { aswData: DailyASW[] }) {
+  const styles = getComputedStyle(document.documentElement);
+  const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
+  const teal = '#1a9988';
+  const red = '#dc2626';
+
+  const latest = aswData[aswData.length - 1];
+  const taw = latest.taw;
+  const pctAvailable = Math.round((latest.asw / taw) * 100);
+  const isStressed = latest.asw < latest.madThreshold;
+
+  const statusLabel = latest.asw <= 0
+    ? 'Wilting Point'
+    : isStressed
+      ? 'Irrigate Soon'
+      : 'Adequate';
+  const statusColor = latest.asw <= 0 ? red : isStressed ? '#b45309' : teal;
+
+  const dates = aswData.map((d) => d.date);
+
+  const chartData = useMemo(() => ({
+    labels: dates.map((d) => format(parseISO(d), 'MMM d')),
+    datasets: [
+      // ASW area fill
+      {
+        type: 'line' as const,
+        label: 'ASW (mm)',
+        data: aswData.map((d) => d.asw),
+        borderColor: '#3b82f6',
+        backgroundColor: '#3b82f620',
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        fill: true,
+        order: 0,
+      },
+      // Daily excess bars
+      {
+        type: 'bar' as const,
+        label: 'Excess (mm)',
+        data: aswData.map((d) => d.excess),
+        backgroundColor: '#06b6d480',
+        borderColor: '#06b6d4',
+        borderWidth: 1,
+        order: 2,
+        yAxisID: 'yExcess',
+      },
+      // Cumulative excess line
+      {
+        type: 'line' as const,
+        label: 'Cum. Excess (mm)',
+        data: aswData.map((d) => d.cumulativeExcess),
+        borderColor: '#06b6d4',
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [4, 3],
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        order: 1,
+        yAxisID: 'yExcess',
+      },
+    ],
+  }), [aswData, dates]);
+
+  const options: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'index' },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: { usePointStyle: true, font: { size: 11 }, color: tx3 },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toFixed(1)} mm`,
+        },
+      },
+      annotation: {
+        annotations: {
+          tawLine: {
+            type: 'line',
+            yMin: taw,
+            yMax: taw,
+            borderColor: teal,
+            borderWidth: 1.5,
+            borderDash: [6, 3],
+            label: {
+              display: true,
+              content: `TAW ${taw.toFixed(0)}`,
+              position: 'start',
+              font: { size: 9 },
+              color: teal,
+              backgroundColor: 'transparent',
+            },
+          },
+          madLine: {
+            type: 'line',
+            yMin: latest.madThreshold,
+            yMax: latest.madThreshold,
+            borderColor: '#b45309',
+            borderWidth: 1.5,
+            borderDash: [4, 4],
+            label: {
+              display: true,
+              content: `MAD ${latest.madThreshold.toFixed(0)}`,
+              position: 'start',
+              font: { size: 9 },
+              color: '#b45309',
+              backgroundColor: 'transparent',
+            },
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: { maxTicksLimit: 8, font: { size: 10 }, color: tx3 },
+        grid: { display: false },
+      },
+      y: {
+        min: 0,
+        max: Math.ceil(taw * 1.1),
+        title: { display: true, text: 'ASW (mm)', font: { size: 10 }, color: tx3 },
+        ticks: { font: { size: 9 }, color: tx3 },
+        grid: { color: `${tx3}15` },
+      },
+      yExcess: {
+        position: 'right',
+        min: 0,
+        title: { display: true, text: 'Excess (mm)', font: { size: 10 }, color: tx3 },
+        ticks: { font: { size: 9 }, color: tx3 },
+        grid: { display: false },
+      },
+    },
+  };
+
+  return (
+    <div className="agraria-card">
+      <div className="sec-label">Soil Water Balance</div>
+      <div className="agraria-info-row grid grid-cols-4 gap-2 mb-3">
+        <div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>ASW</div>
+          <div className="text-base font-semibold" style={{ color: '#3b82f6' }}>
+            {latest.asw.toFixed(0)} <span className="text-[11px] font-normal opacity-70">mm</span>
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Available</div>
+          <div className="text-base font-semibold" style={{ color: statusColor }}>
+            {pctAvailable}%
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Status</div>
+          <div className="text-[13px] font-semibold" style={{ color: statusColor }}>
+            {statusLabel}
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Excess</div>
+          <div className="text-base font-semibold" style={{ color: '#06b6d4' }}>
+            {latest.cumulativeExcess.toFixed(0)} <span className="text-[11px] font-normal opacity-70">mm</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ height: '240px' }}>
+        {/* @ts-expect-error mixed chart type */}
+        <Chart type="line" data={chartData} options={options} />
+      </div>
+      <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
+        ASW = Available Soil Water (bounded 0–TAW). Dashed lines: TAW (field capacity) and MAD (irrigation threshold).
+        Excess = rain/irrigation that exceeds TAW (drainage/runoff).
+      </p>
+    </div>
+  );
+}
+
+// ── Legacy unbounded chart (when no soil params) ──
+function LegacyBalanceChart({ etcData, rainData, irrigationData }: Omit<WaterBalanceChartProps, 'aswData'>) {
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const teal = '#1a9988';
@@ -204,4 +391,12 @@ export function WaterBalanceChart({ etcData, rainData, irrigationData }: WaterBa
       </p>
     </div>
   );
+}
+
+// ── Main export: picks the right chart based on available data ──
+export function WaterBalanceChart({ etcData, rainData, irrigationData, aswData }: WaterBalanceChartProps) {
+  if (aswData && aswData.length > 0) {
+    return <ASWChart aswData={aswData} />;
+  }
+  return <LegacyBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} />;
 }

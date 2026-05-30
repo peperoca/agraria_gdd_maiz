@@ -20,7 +20,9 @@ if ($fieldId <= 0) json_error('Field ID is required');
 $stmt = $db->prepare("
     SELECT id, name, sowing_date AS sowingDate, station_mac AS stationMac,
            COALESCE(crop_type, 'corn') AS cropType, polygon,
-           farm_id AS farmId, created_at AS createdAt
+           farm_id AS farmId, created_at AS createdAt,
+           taw_mm AS tawMm, mad_pct AS madPct, taw_source AS tawSource,
+           coneat_gc AS coneatGc, initial_asw_mm AS initialAswMm
     FROM fields
     WHERE id = ? AND user_id = ?
 ");
@@ -31,6 +33,9 @@ if (!$field) json_error('Field not found', 404);
 $field['id'] = (int) $field['id'];
 $field['farmId'] = $field['farmId'] !== null ? (int) $field['farmId'] : null;
 $field['polygon'] = $field['polygon'] ? json_decode($field['polygon'], true) : null;
+$field['tawMm'] = $field['tawMm'] !== null ? (float) $field['tawMm'] : null;
+$field['madPct'] = $field['madPct'] !== null ? (float) $field['madPct'] : null;
+$field['initialAswMm'] = $field['initialAswMm'] !== null ? (float) $field['initialAswMm'] : null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     json_response($field);
@@ -57,8 +62,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         ? ($body['polygon'] ? json_encode($body['polygon']) : null)
         : ($field['polygon'] ? json_encode($field['polygon']) : null);
 
-    $stmt = $db->prepare("UPDATE fields SET name = ?, sowing_date = ?, crop_type = ?, polygon = ? WHERE id = ?");
-    $stmt->execute([$name, $sowingDate, $cropType, $polygon, $fieldId]);
+    // Soil water balance columns
+    $tawMm = array_key_exists('tawMm', $body) ? ($body['tawMm'] !== null ? (float) $body['tawMm'] : null) : $field['tawMm'];
+    $madPct = array_key_exists('madPct', $body) ? ($body['madPct'] !== null ? (float) $body['madPct'] : null) : $field['madPct'];
+    $tawSource = array_key_exists('tawSource', $body) ? $body['tawSource'] : $field['tawSource'];
+    $coneatGc = array_key_exists('coneatGc', $body) ? $body['coneatGc'] : $field['coneatGc'];
+    $initialAswMm = array_key_exists('initialAswMm', $body) ? ($body['initialAswMm'] !== null ? (float) $body['initialAswMm'] : null) : $field['initialAswMm'];
+
+    // Validate tawSource
+    if ($tawSource !== null && !in_array($tawSource, ['coneat_mm', 'coneat_apdn', 'manual'])) {
+        $tawSource = null;
+    }
+
+    $stmt = $db->prepare("
+        UPDATE fields
+        SET name = ?, sowing_date = ?, crop_type = ?, polygon = ?,
+            taw_mm = ?, mad_pct = ?, taw_source = ?, coneat_gc = ?, initial_asw_mm = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([$name, $sowingDate, $cropType, $polygon, $tawMm, $madPct, $tawSource, $coneatGc, $initialAswMm, $fieldId]);
 
     json_response([
         'id' => $fieldId,
@@ -69,6 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         'stationMac' => $field['stationMac'],
         'farmId' => $field['farmId'],
         'createdAt' => $field['createdAt'],
+        'tawMm' => $tawMm,
+        'madPct' => $madPct,
+        'tawSource' => $tawSource,
+        'coneatGc' => $coneatGc,
+        'initialAswMm' => $initialAswMm,
     ]);
 }
 

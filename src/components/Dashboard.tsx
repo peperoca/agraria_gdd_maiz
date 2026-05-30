@@ -8,10 +8,11 @@ interface DashboardProps {
   onAddField: () => void;
   stationMac?: string | null;
   stationName?: string | null;
+  stationDistanceKm?: number | null;
   canWrite?: boolean;
 }
 
-export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName, canWrite = true }: DashboardProps) {
+export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName, stationDistanceKm, canWrite = true }: DashboardProps) {
   if (fields.length === 0) {
     return (
       <div className="text-center py-12">
@@ -36,7 +37,7 @@ export function Dashboard({ fields, onFieldClick, onAddField, stationMac, statio
   return (
     <div className="space-y-3">
       {stationMac && (
-        <WeatherStationCard stationMac={stationMac} stationName={stationName || stationMac} />
+        <WeatherStationCard stationMac={stationMac} stationName={stationName || stationMac} stationDistanceKm={stationDistanceKm} />
       )}
       {fields.map((field) => (
         <FieldCard key={field.id} field={field} onClick={() => onFieldClick(field)} />

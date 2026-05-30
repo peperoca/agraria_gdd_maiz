@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dashboard } from './components/Dashboard';
-import { FieldForm } from './components/FieldForm';
+import { FieldForm, type FieldFormData } from './components/FieldForm';
 import { FieldDetail } from './components/FieldDetail';
 import { Settings } from './components/Settings';
 import { Login } from './components/Login';
@@ -12,9 +12,9 @@ import { IrrigationPanel } from './components/IrrigationPanel';
 import { ShareManager } from './components/ShareManager';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
-import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, type StationInfo } from './utils/api';
-import type { Field, Farm, User, FieldPolygon } from './types';
-import type { CropType } from './utils/cropConfig';
+import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, getFields as apiGetFields, updateField as apiUpdateField, type StationInfo } from './utils/api';
+import type { Field, Farm, User } from './types';
+// CropType now used via FieldFormData
 
 type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm';
 
@@ -90,15 +90,44 @@ function App() {
   const canWrite = !currentFarm || currentFarm.access === 'owner' || currentFarm.access === 'admin' || !currentFarm.access;
   const selectedField = fields.find((f) => f.id === selectedFieldId) ?? null;
 
-  const handleAddField = async (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => {
+  const handleAddField = async (data: FieldFormData) => {
     const stationMac = currentFarm?.stationMac || stations[0]?.mac || '';
     await add({ ...data, stationMac, farmId: currentFarmId ?? undefined, polygon: data.polygon });
+    // If soil params were set, update the field with them
+    if (data.tawMm != null) {
+      const newFields = await apiGetFields(currentFarmId ?? undefined);
+      const newest = newFields[0]; // most recent
+      if (newest) {
+        await apiUpdateField(newest.id, {
+          tawMm: data.tawMm,
+          madPct: data.madPct,
+          tawSource: data.tawSource,
+          coneatGc: data.coneatGc,
+          initialAswMm: data.initialAswMm,
+        });
+        await refresh();
+      }
+    }
     setView('dashboard');
   };
 
-  const handleEditField = async (data: { name: string; sowingDate: string; cropType: CropType; polygon?: FieldPolygon | null }) => {
+  const handleEditField = async (data: FieldFormData) => {
     if (selectedFieldId !== null) {
-      await update(selectedFieldId, data);
+      await update(selectedFieldId, {
+        name: data.name,
+        sowingDate: data.sowingDate,
+        cropType: data.cropType,
+        polygon: data.polygon,
+      });
+      // Update soil params separately if provided
+      await apiUpdateField(selectedFieldId, {
+        tawMm: data.tawMm,
+        madPct: data.madPct,
+        tawSource: data.tawSource,
+        coneatGc: data.coneatGc,
+        initialAswMm: data.initialAswMm,
+      });
+      await refresh();
       setView('field-detail');
     }
   };
@@ -141,6 +170,7 @@ function App() {
   const handleSettingsSaved = () => {
     setView('dashboard');
     refresh();
+    fetchFarms();
   };
 
   return (
@@ -381,6 +411,7 @@ function App() {
               }}
               stationMac={currentFarm?.stationMac}
               stationName={currentFarm?.stationName}
+              stationDistanceKm={currentFarm?.stationDistanceKm}
               canWrite={canWrite}
             />
           )
