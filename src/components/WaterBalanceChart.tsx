@@ -121,6 +121,17 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         fill: true,
         order: 0,
       },
+      // Daily Rain bars (left axis)
+      {
+        type: 'bar' as const,
+        label: 'Daily Rain',
+        data: aswData.map((d) => d.rain > 0 ? d.rain : null),
+        backgroundColor: `${teal}60`,
+        borderColor: teal,
+        borderWidth: 1,
+        borderRadius: 2,
+        order: 6,
+      },
       // Daily ETc bars (left axis — same scale as ASW)
       {
         type: 'bar' as const,
@@ -307,6 +318,9 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
           <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
             <span style={{ display: 'inline-block', width: 12, height: 8, background: '#3b82f620', border: '1.5px solid #3b82f6', borderRadius: 2 }} /> ASW
+          </span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
+            <span style={{ display: 'inline-block', width: 12, height: 8, background: `${teal}60`, border: `1px solid ${teal}`, borderRadius: 2 }} /> Daily Rain
           </span>
           <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--tx3)' }}>
             <span style={{ display: 'inline-block', width: 12, height: 8, background: `${red}60`, border: `1px solid ${red}`, borderRadius: 2 }} /> Daily ETc
