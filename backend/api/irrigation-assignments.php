@@ -90,15 +90,17 @@ if ($method === 'POST') {
     if (!verify_equipment_owner($db, $equipmentId, $user['id'])) json_error('Equipment not found', 404);
     if (!verify_field_owner($db, $fieldId, $user['id'])) json_error('Field not found', 404);
 
-    // Auto-close previous open assignment for this equipment
-    // Set end_date = day before new start_date
+    // Auto-close previous assignments for this equipment
+    // Any assignment that is open (NULL end_date) or overlaps with the new start_date
+    // gets its end_date set to new start_date - 1 day
     $prevEndDate = date('Y-m-d', strtotime($startDate . ' -1 day'));
     $stmt = $db->prepare("
         UPDATE irrigation_assignments
         SET end_date = ?
-        WHERE equipment_id = ? AND end_date IS NULL AND start_date < ?
+        WHERE equipment_id = ? AND start_date < ?
+          AND (end_date IS NULL OR end_date >= ?)
     ");
-    $stmt->execute([$prevEndDate, $equipmentId, $startDate]);
+    $stmt->execute([$prevEndDate, $equipmentId, $startDate, $startDate]);
 
     $stmt = $db->prepare("
         INSERT INTO irrigation_assignments (equipment_id, field_id, start_date, end_date)
