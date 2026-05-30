@@ -241,8 +241,7 @@ function ASWChart({ aswData, etcData, rainData, irrigationData }: {
       },
       y: {
         min: 0,
-        max: Math.ceil(taw * 1.1),
-        title: { display: true, text: 'ASW (mm)', font: { size: 10 }, color: tx3 },
+        title: { display: true, text: 'mm', font: { size: 10 }, color: tx3 },
         ticks: { font: { size: 9 }, color: tx3 },
         grid: { color: `${tx3}15` },
       },
