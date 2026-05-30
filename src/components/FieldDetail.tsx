@@ -282,11 +282,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {aswData && aswData.length > 0 && (() => {
         const latest = aswData[aswData.length - 1];
         if (latest.asw <= 0) {
-          return <CropAlertBanner type="critical" message={`Soil water at wilting point. Irrigate immediately — deficit: ${latest.taw.toFixed(0)} mm to reach field capacity.`} />;
+          const target80 = Math.round(latest.taw * 0.8);
+          const toApply = Math.round(target80 - latest.asw);
+          return <CropAlertBanner type="critical" message={`Soil water at wilting point. Irrigate immediately — apply ${toApply > 0 ? toApply : target80} mm to reach 80% field capacity.`} />;
         }
         if (latest.asw < latest.madThreshold) {
-          const deficit = Math.round(latest.taw - latest.asw);
-          return <CropAlertBanner type="warning" message={`Soil water below safety threshold (${Math.round(latest.asw / latest.taw * 100)}% available). Consider irrigating — deficit: ${deficit} mm to reach field capacity.`} />;
+          const target80 = Math.round(latest.taw * 0.8);
+          const toApply = Math.round(target80 - latest.asw);
+          return <CropAlertBanner type="warning" message={`Soil water below safety threshold (${Math.round(latest.asw / latest.taw * 100)}% available). Consider irrigating — apply ${toApply} mm to reach 80% field capacity.`} />;
         }
         return null;
       })()}
