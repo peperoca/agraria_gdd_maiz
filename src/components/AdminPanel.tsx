@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdminUser, AdminStation } from '../types';
 import {
   getAdminUsers, updateUserRole,
@@ -8,23 +9,23 @@ import {
 type Tab = 'users' | 'stations';
 
 export function AdminPanel() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('users');
 
   return (
     <div className="space-y-3">
-      {/* Tab switcher */}
       <div className="flex gap-1">
-        {(['users', 'stations'] as Tab[]).map((t) => (
+        {(['users', 'stations'] as Tab[]).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tb}
+            onClick={() => setTab(tb)}
             className="px-3 py-1.5 text-xs font-medium rounded-[var(--r)] transition-colors"
             style={{
-              background: tab === t ? 'var(--blue)' : 'var(--surface2)',
-              color: tab === t ? '#fff' : 'var(--tx2)',
+              background: tab === tb ? 'var(--blue)' : 'var(--surface2)',
+              color: tab === tb ? '#fff' : 'var(--tx2)',
             }}
           >
-            {t === 'users' ? 'Users' : 'Stations'}
+            {tb === 'users' ? t('admin.usersTab') : t('admin.stationsTab')}
           </button>
         ))}
       </div>
@@ -35,9 +36,8 @@ export function AdminPanel() {
   );
 }
 
-// ── Users Tab ──
-
 function UsersTab() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,15 +71,15 @@ function UsersTab() {
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">Users ({users.length})</div>
+      <div className="sec-label">{t('admin.usersCount', { count: users.length })}</div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '0.5px solid var(--bdr2)' }}>
-              <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>User</th>
-              <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Email</th>
-              <th className="text-center py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Fields</th>
-              <th className="text-center py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Role</th>
+              <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('admin.userCol')}</th>
+              <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('admin.emailCol')}</th>
+              <th className="text-center py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('admin.fieldsCol')}</th>
+              <th className="text-center py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('admin.roleCol')}</th>
             </tr>
           </thead>
           <tbody>
@@ -99,8 +99,8 @@ function UsersTab() {
                       borderColor: 'var(--bdr2)',
                     }}
                   >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
+                    <option value="user">{t('admin.roleUser')}</option>
+                    <option value="admin">{t('admin.roleAdmin')}</option>
                   </select>
                 </td>
               </tr>
@@ -112,9 +112,8 @@ function UsersTab() {
   );
 }
 
-// ── Stations Tab ──
-
 function StationsTab() {
+  const { t } = useTranslation();
   const [stations, setStations] = useState<AdminStation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,12 +154,12 @@ function StationsTab() {
     <div className="space-y-3">
       <div className="agraria-card">
         <div className="flex items-center justify-between mb-2">
-          <div className="sec-label mb-0">Stations ({stations.length})</div>
+          <div className="sec-label mb-0">{t('admin.stationsCount', { count: stations.length })}</div>
           <button
             onClick={() => setShowForm(!showForm)}
             className="agraria-btn-orange text-[11px]"
           >
-            {showForm ? 'Cancel' : '+ Add Station'}
+            {showForm ? t('admin.cancel') : t('admin.addStation')}
           </button>
         </div>
 
@@ -198,7 +197,7 @@ function StationsTab() {
                     background: s.isActive ? 'var(--db)' : 'var(--sb)',
                   }}
                 >
-                  {s.isActive ? 'Deactivate' : 'Activate'}
+                  {s.isActive ? t('admin.deactivate') : t('admin.activate')}
                 </button>
               </div>
             </div>
@@ -209,9 +208,8 @@ function StationsTab() {
   );
 }
 
-// ── Station Form ──
-
 function StationForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () => void }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     mac: '', name: '', apiKey: '', applicationKey: '',
     latitude: '-34.5', longitude: '-56.0', elevationM: '50',
@@ -248,62 +246,63 @@ function StationForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () 
   return (
     <form onSubmit={handleSubmit} className="space-y-2 p-2.5 rounded-[var(--r)] mb-2" style={{ background: 'var(--surface2)' }}>
       <input
-        type="text" placeholder="MAC address (e.g. E8:DB:84:E6:C4:B8)" required
+        type="text" placeholder={t('admin.macPlaceholder')} required
         value={form.mac} onChange={(e) => setForm({ ...form, mac: e.target.value })}
         className="w-full text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
       />
       <input
-        type="text" placeholder="Station name" required
+        type="text" placeholder={t('admin.stationNamePlaceholder')} required
         value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
         className="w-full text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
       />
       <input
-        type="text" placeholder="Ambient Weather API Key" required
+        type="text" placeholder={t('admin.apiKeyPlaceholder')} required
         value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
         className="w-full text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
       />
       <input
-        type="text" placeholder="Ambient Weather Application Key" required
+        type="text" placeholder={t('admin.appKeyPlaceholder')} required
         value={form.applicationKey} onChange={(e) => setForm({ ...form, applicationKey: e.target.value })}
         className="w-full text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
       />
       <div className="grid grid-cols-3 gap-2">
         <input
-          type="number" step="any" placeholder="Latitude" required
+          type="number" step="any" placeholder={t('admin.latPlaceholder')} required
           value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })}
           className="text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
         />
         <input
-          type="number" step="any" placeholder="Longitude" required
+          type="number" step="any" placeholder={t('admin.lonPlaceholder')} required
           value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })}
           className="text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
         />
         <input
-          type="number" placeholder="Elev (m)" required
+          type="number" placeholder={t('admin.elevPlaceholder')} required
           value={form.elevationM} onChange={(e) => setForm({ ...form, elevationM: e.target.value })}
           className="text-xs px-2.5 py-1.5 rounded border" style={inputStyle}
         />
       </div>
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving} className="agraria-btn-orange text-[11px]">
-          {saving ? 'Saving...' : 'Create Station'}
+          {saving ? t('admin.saving') : t('admin.createStation')}
         </button>
         <button type="button" onClick={onCancel} className="text-[11px] px-3 py-1" style={{ color: 'var(--tx3)' }}>
-          Cancel
+          {t('admin.cancel')}
         </button>
       </div>
     </form>
   );
 }
 
-// ── Shared helpers ──
+// ── Shared UI Components ──
 
 function LoadingCard() {
   return (
     <div className="agraria-card">
       <div className="space-y-2">
         <div className="h-4 rounded w-1/3" style={{ background: 'var(--surface2)' }} />
-        <div className="h-4 rounded w-2/3" style={{ background: 'var(--surface2)' }} />
+        <div className="h-3 rounded w-full" style={{ background: 'var(--surface2)' }} />
+        <div className="h-3 rounded w-2/3" style={{ background: 'var(--surface2)' }} />
       </div>
     </div>
   );
@@ -312,9 +311,7 @@ function LoadingCard() {
 function ErrorCard({ message }: { message: string }) {
   return (
     <div className="agraria-card">
-      <div className="text-xs p-2.5 rounded-[var(--r)]" style={{ background: 'var(--db)', color: 'var(--dt)' }}>
-        {message}
-      </div>
+      <p className="text-xs" style={{ color: 'var(--dt)' }}>{message}</p>
     </div>
   );
 }

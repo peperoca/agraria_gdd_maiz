@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Field, FieldPolygon } from '../types';
 import { CROP_DROPDOWN_OPTIONS, normalizeCropType, getCropConfig, type CropType } from '../utils/cropConfig';
 import { getConeatSoils } from '../utils/api';
@@ -40,6 +41,7 @@ interface ConeatMatch {
 }
 
 export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: FieldFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(field?.name ?? '');
   const [sowingDate, setSowingDate] = useState(field?.sowingDate ?? '');
   const [cropType, setCropType] = useState<CropType>(normalizeCropType(field?.cropType ?? 'corn'));
@@ -171,30 +173,30 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">{isEditing ? 'Edit Field' : 'New Field'}</div>
+      <div className="sec-label">{isEditing ? t('fieldForm.editField') : t('fieldForm.newField')}</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>Field Name</label>
+          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.fieldNameLabel')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., North 40, River Field"
+            placeholder={t('fieldForm.fieldNamePlaceholder')}
             className="agraria-input"
             autoFocus
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>Crop</label>
+          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.cropLabel')}</label>
           <select
             value={cropType}
             onChange={(e) => setCropType(e.target.value as CropType)}
             className="agraria-input"
           >
             {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
-              <optgroup key={group} label={group}>
+              <optgroup key={group} label={t(`crops.${group.toLowerCase()}`)}>
                 {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -204,7 +206,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>Sowing Date</label>
+          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.sowingDateLabel')}</label>
           <input
             type="date"
             value={sowingDate}
@@ -223,7 +225,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
         />
         {polygon && (
           <div className="text-[10px]" style={{ color: 'var(--tx3)' }}>
-            Polygon drawn ({polygon.coordinates[0].length - 1} points)
+            {t('fieldForm.polygonDrawn', { count: polygon.coordinates[0].length - 1 })}
           </div>
         )}
 
@@ -235,7 +237,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
             className="text-xs font-medium w-full text-left py-1"
             style={{ color: 'var(--tx2)' }}
           >
-            {showSoil ? '▾' : '▸'} Soil Water Balance {tawMm ? `(TAW: ${tawMm} mm)` : '(optional)'}
+            {showSoil ? '▾' : '▸'} {t('fieldForm.soilWaterBalance')} {tawMm ? t('fieldForm.soilTawSet', { value: tawMm }) : t('fieldForm.soilOptional')}
           </button>
 
           {showSoil && (
@@ -250,7 +252,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
                     className="text-[11px] px-3 py-1.5 rounded-[var(--r)] font-medium w-full"
                     style={{ background: 'var(--bg)', color: 'var(--tx)', border: '1px solid var(--bdr)' }}
                   >
-                    {coneatLoading ? 'Analyzing soil...' : 'Auto-detect from CONEAT soil map'}
+                    {coneatLoading ? t('fieldForm.analyzingSoil') : t('fieldForm.autoDetectConeat')}
                   </button>
 
                   {coneatError && (
@@ -260,7 +262,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
                   {coneatMatches && coneatMatches.length > 0 && (
                     <div className="mt-2 space-y-1">
                       <p className="text-[10px] mb-1" style={{ color: 'var(--tx3)' }}>
-                        Select a value — MM (soil storage) or APDN (adjusted for landscape):
+                        {t('fieldForm.selectConeatValue')}
                       </p>
                       {coneatMatches.map((m) => (
                         <div
@@ -316,7 +318,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
 
               {!polygon && (
                 <p className="text-[10px]" style={{ color: 'var(--tx3)' }}>
-                  Draw a field polygon above to auto-detect soil from CONEAT map.
+                  {t('fieldForm.drawPolygonForConeat')}
                 </p>
               )}
 

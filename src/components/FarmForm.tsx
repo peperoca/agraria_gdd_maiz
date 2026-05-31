@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -12,6 +13,7 @@ interface FarmFormProps {
 }
 
 export function FarmForm({ initialName, initialLat, initialLng, onSubmit, onCancel, isEditing }: FarmFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialName ?? '');
   const [lat, setLat] = useState<number | null>(initialLat ?? null);
   const [lng, setLng] = useState<number | null>(initialLng ?? null);
@@ -106,16 +108,16 @@ export function FarmForm({ initialName, initialLat, initialLng, onSubmit, onCanc
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">{isEditing ? 'Edit Farm' : 'New Farm'}</div>
+      <div className="sec-label">{isEditing ? t('settings.editFarm') : t('farmForm.newFarm')}</div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>Farm Name</label>
+          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('farmForm.farmNameLabel')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Estancia Santa Rosa"
+            placeholder={t('farmForm.farmNamePlaceholder')}
             className="agraria-input"
             autoFocus
           />
@@ -123,7 +125,7 @@ export function FarmForm({ initialName, initialLat, initialLng, onSubmit, onCanc
 
         <div className="flex flex-col gap-1">
           <label className="text-xs" style={{ color: 'var(--tx2)' }}>
-            Location <span style={{ color: 'var(--tx3)' }}>(tap map to place pin)</span>
+            {t('farmForm.locationLabel')} <span style={{ color: 'var(--tx3)' }}>{t('farmForm.locationHint')}</span>
           </label>
           <div
             ref={mapRef}
@@ -144,14 +146,14 @@ export function FarmForm({ initialName, initialLat, initialLng, onSubmit, onCanc
             className="flex-1 py-2.5 px-4 rounded-[var(--r)] text-sm font-medium cursor-pointer border-none"
             style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
           >
-            Cancel
+            {t('farmForm.cancel')}
           </button>
           <button
             type="submit"
             disabled={!isValid}
             className="agraria-btn-primary flex-1"
           >
-            {isEditing ? 'Save Changes' : 'Create Farm'}
+            {isEditing ? t('settings.save') : t('farmForm.createFarm')}
           </button>
         </div>
       </form>

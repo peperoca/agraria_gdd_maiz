@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { login, register } from '../utils/api';
 
 interface LoginProps {
@@ -6,6 +7,7 @@ interface LoginProps {
 }
 
 export function Login({ onLoggedIn }: LoginProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -19,11 +21,11 @@ export function Login({ onLoggedIn }: LoginProps) {
     setError(null);
 
     if (mode === 'register' && password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsMismatch'));
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -33,7 +35,7 @@ export function Login({ onLoggedIn }: LoginProps) {
         await login(username, password);
       } else {
         if (!email) {
-          setError('Email is required');
+          setError(t('auth.emailRequired'));
           setLoading(false);
           return;
         }
@@ -41,7 +43,7 @@ export function Login({ onLoggedIn }: LoginProps) {
       }
       onLoggedIn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      setError(err instanceof Error ? err.message : t('auth.authFailed'));
     } finally {
       setLoading(false);
     }
@@ -55,23 +57,23 @@ export function Login({ onLoggedIn }: LoginProps) {
           <div className="inline-block bg-white rounded-2xl px-4 py-2 mb-3">
             <img src="/agraria-logo.png" alt="Agraria" className="h-8 w-auto" />
           </div>
-          <h1 className="text-lg font-bold" style={{ color: 'var(--tx)' }}>GDD Tracker</h1>
+          <h1 className="text-lg font-bold" style={{ color: 'var(--tx)' }}>{t('auth.appTitle')}</h1>
           <p className="text-xs mt-1" style={{ color: 'var(--tx3)' }}>
-            Growing Degree Days Monitor
+            {t('auth.subtitle')}
           </p>
         </div>
 
         <div className="agraria-card">
-          <div className="sec-label">{mode === 'login' ? 'Sign In' : 'Create Account'}</div>
+          <div className="sec-label">{mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}</div>
 
           <form onSubmit={handleSubmit} className="space-y-3" noValidate>
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: 'var(--tx2)' }}>Username</label>
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('auth.usernameLabel')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder={t('auth.usernamePlaceholder')}
                 className="agraria-input"
                 autoFocus
                 required
@@ -80,12 +82,12 @@ export function Login({ onLoggedIn }: LoginProps) {
 
             {mode === 'register' && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs" style={{ color: 'var(--tx2)' }}>Email</label>
+                <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('auth.emailLabel')}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   className="agraria-input"
                   required
                 />
@@ -93,12 +95,12 @@ export function Login({ onLoggedIn }: LoginProps) {
             )}
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: 'var(--tx2)' }}>Password</label>
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('auth.passwordLabel')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder={t('auth.passwordPlaceholder')}
                 className="agraria-input"
                 required
               />
@@ -106,12 +108,12 @@ export function Login({ onLoggedIn }: LoginProps) {
 
             {mode === 'register' && (
               <div className="flex flex-col gap-1">
-                <label className="text-xs" style={{ color: 'var(--tx2)' }}>Confirm Password</label>
+                <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('auth.confirmPasswordLabel')}</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat password"
+                  placeholder={t('auth.confirmPasswordPlaceholder')}
                   className="agraria-input"
                   required
                 />
@@ -129,7 +131,7 @@ export function Login({ onLoggedIn }: LoginProps) {
               disabled={loading || !username || !password}
               className="agraria-btn-primary w-full"
             >
-              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {loading ? t('auth.pleaseWait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
             </button>
           </form>
 
@@ -142,7 +144,7 @@ export function Login({ onLoggedIn }: LoginProps) {
               className="text-xs font-medium bg-transparent border-none cursor-pointer"
               style={{ color: 'var(--blue)' }}
             >
-              {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Sign In'}
+              {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}
             </button>
           </div>
         </div>

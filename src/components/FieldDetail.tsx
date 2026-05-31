@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
@@ -30,6 +31,7 @@ interface FieldDetailProps {
 }
 
 export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetailProps) {
+  const { t } = useTranslation();
   const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { loading, error, fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
@@ -236,19 +238,19 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
             {/* Info row */}
             <div className="agraria-info-row grid grid-cols-3 gap-2 mt-2 mb-3">
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>GDD</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('field.gddUnit')}</div>
                 <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
                   {Math.round(cumulative)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Stage</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('growthStages.stageCol')}</div>
                 <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
                   {currentStage?.shortName ?? '—'}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Days</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('field.daysAbbr')}</div>
                 <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
                   {daysSinceSowing}
                 </div>
@@ -272,7 +274,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         <div className="agraria-card">
           <div className="flex items-center justify-between">
             <div>
-              <div className="sec-label" style={{ margin: 0 }}>Data Source</div>
+              <div className="sec-label" style={{ margin: 0 }}>{t('field.dataSource')}</div>
               <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>
                 {gddData.filter((d) => d.source && d.source !== 'station').length} day(s) with estimated data
               </p>
@@ -286,7 +288,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                   color: gapPref === 'carry_forward' ? '#fff' : 'var(--tx3)',
                 }}
               >
-                Carry Forward
+                {t('field.carryForward')}
               </button>
               <button
                 onClick={() => setGapPref('fallback')}
@@ -296,7 +298,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                   color: gapPref === 'fallback' ? '#fff' : 'var(--tx3)',
                 }}
               >
-                Nearest Station
+                {t('field.nearestStation')}
               </button>
             </div>
           </div>
@@ -311,12 +313,12 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         if (latest.asw <= 0) {
           const target80 = Math.round(latest.taw * 0.8);
           const toApply = Math.round(target80 - latest.asw);
-          return <CropAlertBanner type="critical" message={`Soil water at wilting point. Irrigate immediately — apply ${toApply > 0 ? toApply : target80} mm to reach 80% field capacity.`} />;
+          return <CropAlertBanner type="critical" message={t('alerts.soilWiltingPoint', { amount: toApply > 0 ? toApply : target80 })} />;
         }
         if (latest.asw < latest.madThreshold) {
           const target80 = Math.round(latest.taw * 0.8);
           const toApply = Math.round(target80 - latest.asw);
-          return <CropAlertBanner type="warning" message={`Soil water below safety threshold (${Math.round(latest.asw / latest.taw * 100)}% available). Consider irrigating — apply ${toApply} mm to reach 80% field capacity.`} />;
+          return <CropAlertBanner type="warning" message={t('alerts.soilBelowThreshold', { pct: Math.round(latest.asw / latest.taw * 100), amount: toApply })} />;
         }
         return null;
       })()}
@@ -332,7 +334,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
             className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium border"
             style={{ borderColor: 'var(--bdr2)', color: 'var(--tx2)', background: 'var(--surface)' }}
           >
-            Export CSV
+            {t('field.exportCsv')}
           </button>
           <button
             onClick={() => exportFieldPdf(
@@ -342,7 +344,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
             className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium border"
             style={{ borderColor: 'var(--bdr2)', color: 'var(--tx2)', background: 'var(--surface)' }}
           >
-            Export PDF
+            {t('field.exportPdf')}
           </button>
         </div>
       )}
@@ -380,7 +382,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
         <>
           <div className="agraria-card">
             <div className="flex items-center justify-between">
-              <div className="sec-label" style={{ margin: 0 }}>Kc Formula</div>
+              <div className="sec-label" style={{ margin: 0 }}>{t('field.kcFormula')}</div>
               <div className="flex rounded-[var(--r)] overflow-hidden border" style={{ borderColor: 'var(--bdr2)' }}>
                 <button
                   onClick={() => setKcFormula('linear')}
@@ -390,7 +392,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                     color: kcFormula === 'linear' ? '#fff' : 'var(--tx3)',
                   }}
                 >
-                  Linear
+                  {t('field.kcLinear')}
                 </button>
                 <button
                   onClick={() => setKcFormula('nonlinear')}
@@ -400,18 +402,18 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
                     color: kcFormula === 'nonlinear' ? '#fff' : 'var(--tx3)',
                   }}
                 >
-                  Non-linear
+                  {t('field.kcNonlinear')}
                 </button>
               </div>
             </div>
             <p className="text-[9px] mt-1.5" style={{ color: 'var(--tx3)' }}>
               {kcFormula === 'linear'
-                ? `Active: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)`
-                : `Active: Kc = ${cropConfig.kcMin.toFixed(2)} + (${cropConfig.kcMax.toFixed(2)} − ${cropConfig.kcMin.toFixed(2)}) × [(NDVI − 0.15) / (${cropConfig.ndviMax.toFixed(2)} − 0.15)] (Glenn et al. 2011)`
+                ? t('field.kcLinearDesc')
+                : t('field.kcNonlinearDesc')
               }
             </p>
             <p className="text-[9px]" style={{ color: 'var(--tx3)' }}>
-              Both curves shown on chart. Toggle selects which drives ETc/water balance.
+              {t('field.kcChartNote')}
             </p>
           </div>
           <NdviChart
@@ -456,25 +458,25 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {/* Daily data table */}
       {gddData && gddData.length > 0 && (
         <div className="agraria-card">
-          <div className="sec-label">Recent Daily Data</div>
+          <div className="sec-label">{t('field.recentDailyData')}</div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '0.5px solid var(--bdr2)' }}>
-                  <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Date</th>
-                  <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>GDD</th>
-                  <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Cum.</th>
+                  <th className="text-left py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.dateCol')}</th>
+                  <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.gddCol')}</th>
+                  <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.cumCol')}</th>
                   {etoData && etoData.length > 0 && (
-                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>ETo</th>
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.etoCol')}</th>
                   )}
                   {hasRain && (
-                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Rain</th>
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.rainCol')}</th>
                   )}
                   {hasIrrigation && (
-                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Irrig.</th>
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.irrigCol')}</th>
                   )}
                   {etcData && etcData.length > 0 && (
-                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>ETc</th>
+                    <th className="text-right py-1.5 px-2 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.etcCol')}</th>
                   )}
                 </tr>
               </thead>

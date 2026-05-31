@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { updateFarm, getStationsWithDistance } from '../utils/api';
@@ -14,6 +15,7 @@ interface SettingsProps {
 }
 
 export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: SettingsProps) {
+  const { t } = useTranslation();
   const [editingFarm, setEditingFarm] = useState(false);
   const [farmName, setFarmName] = useState(currentFarm?.name ?? '');
   const [lat, setLat] = useState<number | null>(currentFarm?.latitude ?? null);
@@ -110,7 +112,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
       setEditingFarm(false);
       onSaved();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update farm');
+      alert(err instanceof Error ? err.message : t('settings.failedUpdateFarm'));
     } finally {
       setSaving(false);
     }
@@ -131,7 +133,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
 
   const handleOpenStationPicker = async () => {
     if (!currentFarm?.latitude || !currentFarm?.longitude) {
-      alert('Set a farm location first to see stations sorted by distance.');
+      alert(t('settings.setLocationFirst'));
       return;
     }
     setShowStationPicker(true);
@@ -154,7 +156,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
       setShowStationPicker(false);
       onSaved();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update station');
+      alert(err instanceof Error ? err.message : t('settings.failedUpdateStation'));
     } finally {
       setSaving(false);
     }
@@ -165,16 +167,16 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
       {/* Current Farm info */}
       {currentFarm && !editingFarm && (
         <div className="agraria-card">
-          <div className="sec-label">Farm Settings</div>
+          <div className="sec-label">{t('settings.farmSettings')}</div>
           <div className="space-y-1.5 text-xs" style={{ color: 'var(--tx2)' }}>
             <div className="flex justify-between">
-              <span>Name</span>
+              <span>{t('settings.nameLabel')}</span>
               <span style={{ color: 'var(--tx)' }}>{currentFarm.name}</span>
             </div>
             <div className="flex justify-between">
-              <span>Station</span>
+              <span>{t('settings.stationLabel')}</span>
               <span style={{ color: 'var(--tx)' }}>
-                {currentFarm.stationName || <span style={{ color: 'var(--tx3)' }}>Not assigned</span>}
+                {currentFarm.stationName || <span style={{ color: 'var(--tx3)' }}>{t('settings.notAssigned')}</span>}
                 {currentFarm.stationDistanceKm != null && (
                   <span
                     className="ml-1"
@@ -187,15 +189,15 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
             </div>
             {currentFarm.latitude !== null && currentFarm.longitude !== null ? (
               <div className="flex justify-between">
-                <span>Location</span>
+                <span>{t('settings.locationLabel')}</span>
                 <span style={{ color: 'var(--tx)' }}>
                   {currentFarm.latitude.toFixed(4)}, {currentFarm.longitude.toFixed(4)}
                 </span>
               </div>
             ) : (
               <div className="flex justify-between">
-                <span>Location</span>
-                <span style={{ color: '#b45309' }}>Not set — tap Edit to place pin</span>
+                <span>{t('settings.locationLabel')}</span>
+                <span style={{ color: '#b45309' }}>{t('settings.locationNotSet')}</span>
               </div>
             )}
           </div>
@@ -206,14 +208,14 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
               className="text-[11px] px-3 py-1.5 rounded-[var(--r)] font-medium"
               style={{ background: 'var(--surface2)', color: 'var(--tx)' }}
             >
-              Edit Farm
+              {t('settings.editFarm')}
             </button>
             <button
               onClick={handleOpenStationPicker}
               className="text-[11px] px-3 py-1.5 rounded-[var(--r)] font-medium"
               style={{ background: 'var(--surface2)', color: 'var(--tx)' }}
             >
-              Change Station
+              {t('settings.changeStation')}
             </button>
             {onDeleteFarm && (
               <button
@@ -221,7 +223,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
                 className="text-[11px] px-3 py-1.5 rounded-[var(--r)] border ml-auto"
                 style={{ borderColor: 'var(--dt)', color: 'var(--dt)', background: 'transparent' }}
               >
-                Delete
+                {t('settings.delete')}
               </button>
             )}
           </div>
@@ -231,10 +233,10 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
       {/* Edit farm form */}
       {currentFarm && editingFarm && (
         <div className="agraria-card">
-          <div className="sec-label">Edit Farm</div>
+          <div className="sec-label">{t('settings.editFarm')}</div>
           <div className="space-y-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: 'var(--tx2)' }}>Farm Name</label>
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('settings.farmNameLabel')}</label>
               <input
                 type="text"
                 value={farmName}
@@ -245,7 +247,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
 
             <div className="flex flex-col gap-1">
               <label className="text-xs" style={{ color: 'var(--tx2)' }}>
-                Location <span style={{ color: 'var(--tx3)' }}>(tap map to place/move pin)</span>
+                {t('settings.locationLabel')} <span style={{ color: 'var(--tx3)' }}>{t('settings.locationHint')}</span>
               </label>
               <div
                 ref={mapRef}
@@ -265,14 +267,14 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
                 className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium"
                 style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
               >
-                Cancel
+                {t('settings.cancel')}
               </button>
               <button
                 onClick={handleSaveFarm}
                 disabled={saving || !farmName.trim()}
                 className="agraria-btn-primary flex-1 text-xs"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('settings.saving') : t('settings.save')}
               </button>
             </div>
           </div>
@@ -283,22 +285,22 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
       {showStationPicker && (
         <div className="agraria-card">
           <div className="flex items-center justify-between mb-2">
-            <div className="sec-label mb-0">Select Weather Station</div>
+            <div className="sec-label mb-0">{t('settings.selectWeatherStation')}</div>
             <button
               onClick={() => setShowStationPicker(false)}
               className="text-[11px] px-2 py-1 rounded"
               style={{ color: 'var(--tx3)' }}
             >
-              Cancel
+              {t('settings.cancel')}
             </button>
           </div>
           <p className="text-[10px] mb-2" style={{ color: 'var(--tx3)' }}>
-            Sorted by distance from farm. Closer stations provide more accurate weather data.
+            {t('settings.stationSortNote')}
           </p>
           {loadingStations ? (
-            <div className="text-xs py-4 text-center" style={{ color: 'var(--tx3)' }}>Loading stations...</div>
+            <div className="text-xs py-4 text-center" style={{ color: 'var(--tx3)' }}>{t('settings.loadingStations')}</div>
           ) : availableStations.length === 0 ? (
-            <div className="text-xs py-4 text-center" style={{ color: 'var(--tx3)' }}>No stations available.</div>
+            <div className="text-xs py-4 text-center" style={{ color: 'var(--tx3)' }}>{t('settings.noStationsAvailable')}</div>
           ) : (
             <div className="space-y-1 max-h-[300px] overflow-y-auto">
               {availableStations.map((s) => {
@@ -321,7 +323,7 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
                         {s.name}
                         {isCurrent && (
                           <span className="ml-1.5 text-[10px] font-normal" style={{ color: 'var(--blue)' }}>
-                            (current)
+                            {t('settings.currentStation')}
                           </span>
                         )}
                       </div>
@@ -347,15 +349,15 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
 
       {/* Account */}
       <div className="agraria-card space-y-3">
-        <div className="sec-label">Account</div>
+        <div className="sec-label">{t('settings.account')}</div>
         <button
           onClick={onLogout}
           className="agraria-btn-secondary w-full flex items-center justify-center gap-2"
         >
-          Sign Out
+          {t('settings.signOut')}
         </button>
         <p className="text-[11px]" style={{ color: 'var(--tx3)' }}>
-          Your fields and weather data are stored on the server and synced across devices.
+          {t('settings.accountNote')}
         </p>
       </div>
     </div>

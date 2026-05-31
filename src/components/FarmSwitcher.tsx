@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Farm } from '../types';
 
 interface FarmSwitcherProps {
@@ -8,6 +9,8 @@ interface FarmSwitcherProps {
 }
 
 export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: FarmSwitcherProps) {
+  const { t } = useTranslation();
+
   if (farms.length === 0) {
     return (
       <button
@@ -15,7 +18,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
         className="text-[11px] px-2.5 py-1 rounded-[var(--r)] font-medium"
         style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}
       >
-        + Add Farm
+        {t('farmSwitcher.addFarm')}
       </button>
     );
   }
@@ -46,7 +49,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
       {hasGroups ? (
         <>
           {ownedFarms.length > 0 && (
-            <optgroup label="My Farms" style={{ color: '#000' }}>
+            <optgroup label={t('farmSwitcher.myFarms')} style={{ color: '#000' }}>
               {ownedFarms.map((f) => (
                 <option key={f.id} value={f.id} style={{ color: '#000' }}>
                   {f.name}
@@ -55,7 +58,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
             </optgroup>
           )}
           {sharedFarms.length > 0 && (
-            <optgroup label="Shared with me" style={{ color: '#000' }}>
+            <optgroup label={t('farmSwitcher.sharedWithMe')} style={{ color: '#000' }}>
               {sharedFarms.map((f) => (
                 <option key={f.id} value={f.id} style={{ color: '#000' }}>
                   {f.name}{f.ownerUsername ? ` (${f.ownerUsername})` : ''}
@@ -64,7 +67,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
             </optgroup>
           )}
           {adminFarms.length > 0 && (
-            <optgroup label="All Farms (Admin)" style={{ color: '#000' }}>
+            <optgroup label={t('farmSwitcher.allFarmsAdmin')} style={{ color: '#000' }}>
               {adminFarms.map((f) => (
                 <option key={f.id} value={f.id} style={{ color: '#000' }}>
                   {f.name}{f.ownerUsername ? ` (${f.ownerUsername})` : ''}
@@ -80,7 +83,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
           </option>
         ))
       )}
-      <option value="__add__" style={{ color: '#000' }}>+ Add Farm...</option>
+      <option value="__add__" style={{ color: '#000' }}>{t('farmSwitcher.addFarm')}</option>
     </select>
   );
 }

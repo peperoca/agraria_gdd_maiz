@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { DailyGdd } from '../types';
 import { calculateDaylength, getDayOfYear, calculatePtu } from '../utils/photoperiod';
 
@@ -17,6 +18,7 @@ export function PhotoperiodCard({
   gddData,
   maturityPtu,
 }: PhotoperiodCardProps) {
+  const { t } = useTranslation();
   // Current daylength
   const today = new Date().toISOString().slice(0, 10);
   const doy = getDayOfYear(today);
@@ -49,23 +51,23 @@ export function PhotoperiodCard({
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">Photoperiod & PTU — {cropLabel}</div>
+      <div className="sec-label">{t('photoperiod.title', { crop: cropLabel })}</div>
 
       <div className="agraria-info-row grid grid-cols-3 gap-2 mb-3">
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Daylength</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.daylength')}</div>
           <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
             {daylength.toFixed(1)}h
           </div>
         </div>
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Critical</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.critical')}</div>
           <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
             {criticalPhotoperiod}h
           </div>
         </div>
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Status</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.status')}</div>
           <div className="text-base font-semibold" style={{ color: statusColor }}>
             {statusIcon} {photoStatus === 'below' ? 'Active' : photoStatus === 'approaching' ? 'Near' : 'Waiting'}
           </div>
@@ -104,9 +106,9 @@ export function PhotoperiodCard({
         </div>
       </div>
       <div className="flex justify-between mt-0.5">
-        <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>Short days</span>
-        <span className="text-[9px]" style={{ color: '#dc2626' }}>← Critical: {criticalPhotoperiod}h</span>
-        <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>Long days</span>
+        <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>{t('photoperiod.shortDays')}</span>
+        <span className="text-[9px]" style={{ color: '#dc2626' }}>{t('photoperiod.criticalThreshold', { hours: criticalPhotoperiod })}</span>
+        <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>{t('photoperiod.longDays')}</span>
       </div>
 
       {/* PTU section */}
@@ -114,21 +116,21 @@ export function PhotoperiodCard({
         <div className="mt-3 pt-3" style={{ borderTop: '0.5px solid var(--bdr)' }}>
           <div className="agraria-info-row grid grid-cols-3 gap-2">
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Cum. PTU</div>
+              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.cumPtu')}</div>
               <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                 {latestPtu.cumulativePtu.toLocaleString()}
               </div>
             </div>
             {maturityPtu && (
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Target PTU</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.targetPtu')}</div>
                 <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                   ~{(maturityPtu / 1000).toFixed(0)}k
                 </div>
               </div>
             )}
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Today PTU</div>
+              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('photoperiod.todayPtu')}</div>
               <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                 +{latestPtu.dailyPtu.toFixed(0)}
               </div>
@@ -148,7 +150,7 @@ export function PhotoperiodCard({
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>
-                  {Math.min(100, Math.round((latestPtu.cumulativePtu / maturityPtu) * 100))}% PTU to maturity
+                  {t('photoperiod.ptuProgress', { pct: Math.min(100, Math.round((latestPtu.cumulativePtu / maturityPtu) * 100)) })}
                 </span>
                 <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>
                   ~{maturityPtu.toLocaleString()} PTU
@@ -160,8 +162,7 @@ export function PhotoperiodCard({
       )}
 
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        Soybean is a short-day plant — flowering triggered when daylength drops below critical threshold.
-        PTU (GDD × daylength) combines thermal and photoperiod effects.
+        {t('photoperiod.description')}
       </p>
     </div>
   );

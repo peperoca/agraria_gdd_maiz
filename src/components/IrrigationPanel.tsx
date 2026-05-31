@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Farm, Field, IrrigationEquipment, IrrigationAssignment } from '../types';
 import {
   getIrrigationEquipment,
@@ -45,15 +46,16 @@ function mapAssignment(raw: IrrigationAssignmentRaw): IrrigationAssignment {
   };
 }
 
-const EQUIP_TYPES = [
-  { value: 'pivot', label: 'Pivot' },
-  { value: 'drip', label: 'Drip' },
-  { value: 'sprinkler', label: 'Sprinkler' },
-  { value: 'flood', label: 'Flood' },
-  { value: 'other', label: 'Other' },
+const EQUIP_TYPE_KEYS = [
+  { value: 'pivot', key: 'irrigation.typePivot' },
+  { value: 'drip', key: 'irrigation.typeDrip' },
+  { value: 'sprinkler', key: 'irrigation.typeSprinkler' },
+  { value: 'flood', key: 'irrigation.typeFlood' },
+  { value: 'other', key: 'irrigation.typeOther' },
 ];
 
 export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
+  const { t } = useTranslation();
   const [equipment, setEquipment] = useState<IrrigationEquipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -147,7 +149,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
   };
 
   const handleDeleteEquipment = async (id: number) => {
-    if (!confirm('Deactivate this equipment?')) return;
+    if (!confirm(t('irrigation.deactivateConfirm'))) return;
     try {
       await deleteIrrigationEquipment(id);
       await fetchEquipment();
@@ -224,7 +226,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
   };
 
   const handleDeleteAssignment = async (a: IrrigationAssignment) => {
-    if (!confirm('Delete this assignment?')) return;
+    if (!confirm(t('irrigation.deleteAssignmentConfirm'))) return;
     try {
       await deleteIrrigationAssignment(a.id);
       await fetchAssignments(a.equipmentId);
@@ -236,7 +238,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <p className="text-xs" style={{ color: 'var(--tx3)' }}>Loading irrigation equipment...</p>
+        <p className="text-xs" style={{ color: 'var(--tx3)' }}>{t('irrigation.loadingEquipment')}</p>
       </div>
     );
   }
@@ -247,16 +249,16 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
       <div className="agraria-card">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold" style={{ color: 'var(--tx)' }}>Irrigation</h2>
+            <h2 className="text-base font-bold" style={{ color: 'var(--tx)' }}>{t('irrigation.title')}</h2>
             <p className="text-xs" style={{ color: 'var(--tx3)' }}>
-              {farm.name} &middot; {equipment.length} equipment
+              {farm.name} &middot; {t('irrigation.equipmentCount', { count: equipment.length })}
             </p>
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="agraria-btn-orange text-xs"
           >
-            {showAddForm ? 'Cancel' : '+ Add Equipment'}
+            {showAddForm ? t('irrigation.cancel') : t('irrigation.addEquipment')}
           </button>
         </div>
 
@@ -264,63 +266,63 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
         {showAddForm && (
           <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '0.5px solid var(--bdr)' }}>
             <div>
-              <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Name *</label>
+              <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.nameLabel')}</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="e.g. Pivot North"
+                placeholder={t('irrigation.namePlaceholder')}
                 className="agraria-input w-full"
               />
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Serial Number</label>
+                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.serialLabel')}</label>
                 <input
                   type="text"
                   value={newSerial}
                   onChange={(e) => setNewSerial(e.target.value)}
-                  placeholder="AgSense serial"
+                  placeholder={t('irrigation.serialPlaceholder')}
                   className="agraria-input w-full"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Area (ha) *</label>
+                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.areaLabel')}</label>
                 <input
                   type="number"
                   step="0.01"
                   value={newArea}
                   onChange={(e) => setNewArea(e.target.value)}
-                  placeholder="e.g. 65.5"
+                  placeholder={t('irrigation.areaPlaceholder')}
                   className="agraria-input w-full"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Type</label>
+                <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.typeLabel')}</label>
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
                   className="agraria-input w-full"
                 >
-                  {EQUIP_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {EQUIP_TYPE_KEYS.map((et) => (
+                    <option key={et.value} value={et.value}>{t(et.key)}</option>
                   ))}
                 </select>
               </div>
             </div>
             <div>
               <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>
-                AgSense Report URL
+                {t('irrigation.agSenseUrlLabel')}
               </label>
               <input
                 type="url"
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
-                placeholder="Paste full AgSense report URL..."
+                placeholder={t('irrigation.agSenseUrlPlaceholder')}
                 className="agraria-input w-full text-[10px]"
               />
               <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>
-                Open the &quot;Applied by Day&quot; report in AgSense 365 and copy the URL. The system reads Total Cubic Meters Pumped and divides by the irrigated area to compute average mm/day.
+                {t('irrigation.agSenseUrlNote')}
               </p>
             </div>
             <button
@@ -328,7 +330,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
               disabled={saving || !newName.trim()}
               className="agraria-btn-primary w-full text-xs mt-1"
             >
-              {saving ? 'Saving...' : 'Add Equipment'}
+              {saving ? t('irrigation.saving') : t('irrigation.addEquipmentBtn')}
             </button>
           </div>
         )}
@@ -339,7 +341,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
         <div className="agraria-card text-center py-6">
           <div className="text-3xl mb-2">💧</div>
           <p className="text-xs" style={{ color: 'var(--tx3)' }}>
-            No irrigation equipment yet. Add your first pivot or sprinkler.
+            {t('irrigation.noEquipmentYet')}
           </p>
         </div>
       )}
@@ -369,17 +371,17 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
               <div className="flex items-center gap-2">
                 {equip.reportUrl && equip.areaHa && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#1a998820', color: '#1a9988' }}>
-                    Auto-fetch
+                    {t('irrigation.autoFetch')}
                   </span>
                 )}
                 {equip.reportUrl && !equip.areaHa && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: '#dc262620', color: '#dc2626' }}>
-                    Set area
+                    {t('irrigation.setArea')}
                   </span>
                 )}
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded"
                   style={{ background: 'var(--surface2)', color: 'var(--tx3)' }}>
-                  {isExpanded ? 'Collapse' : 'Details'}
+                  {isExpanded ? t('irrigation.collapse') : t('irrigation.details')}
                 </span>
               </div>
             </div>
@@ -390,59 +392,59 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 {/* Equipment edit form */}
                 {editingEquipId === equip.id ? (
                   <div className="p-2 rounded space-y-1.5" style={{ background: 'var(--surface2)' }}>
-                    <div className="sec-label" style={{ margin: 0 }}>Edit Equipment</div>
+                    <div className="sec-label" style={{ margin: 0 }}>{t('irrigation.editEquipment')}</div>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Name</label>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.nameLabel')}</label>
                         <input type="text" value={editEquipName} onChange={(e) => setEditEquipName(e.target.value)} className="agraria-input w-full" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Serial</label>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.serialLabel')}</label>
                         <input type="text" value={editEquipSerial} onChange={(e) => setEditEquipSerial(e.target.value)} className="agraria-input w-full" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Area (ha)</label>
-                        <input type="number" step="0.01" value={editEquipArea} onChange={(e) => setEditEquipArea(e.target.value)} placeholder="e.g. 65.5" className="agraria-input w-full" />
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.areaLabel')}</label>
+                        <input type="number" step="0.01" value={editEquipArea} onChange={(e) => setEditEquipArea(e.target.value)} placeholder={t('irrigation.areaPlaceholder')} className="agraria-input w-full" />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Report URL</label>
+                      <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.reportUrlLabel')}</label>
                       <input type="url" value={editEquipUrl} onChange={(e) => setEditEquipUrl(e.target.value)} className="agraria-input w-full text-[10px]" />
                     </div>
                     <div className="flex gap-1.5">
                       <button onClick={handleSaveEquipment} disabled={saving} className="text-[10px] px-3 py-1 rounded font-medium" style={{ background: 'var(--orange)', color: '#fff' }}>
-                        {saving ? 'Saving...' : 'Save'}
+                        {saving ? t('irrigation.saving') : t('irrigation.save')}
                       </button>
                       <button onClick={() => setEditingEquipId(null)} className="text-[10px] px-3 py-1 rounded font-medium" style={{ color: 'var(--tx3)' }}>
-                        Cancel
+                        {t('irrigation.cancel')}
                       </button>
                     </div>
                   </div>
                 ) : null}
 
                 <div className="flex items-center justify-between">
-                  <div className="sec-label" style={{ margin: 0 }}>Field Assignments</div>
+                  <div className="sec-label" style={{ margin: 0 }}>{t('irrigation.fieldAssignments')}</div>
                   <div className="flex gap-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); startEditEquipment(equip); }}
                       className="text-[10px] px-2 py-0.5 rounded font-medium"
                       style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
                     >
-                      Edit
+                      {t('irrigation.edit')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setAddingAssignmentFor(isAddingAssignment ? null : equip.id); }}
                       className="text-[10px] px-2 py-0.5 rounded font-medium"
                       style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
                     >
-                      {isAddingAssignment ? 'Cancel' : '+ Move'}
+                      {isAddingAssignment ? t('irrigation.cancel') : t('irrigation.move')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteEquipment(equip.id); }}
                       className="text-[10px] px-2 py-0.5 rounded font-medium"
                       style={{ background: '#dc262615', color: '#dc2626' }}
                     >
-                      Deactivate
+                      {t('irrigation.deactivate')}
                     </button>
                   </div>
                 </div>
@@ -451,13 +453,13 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 {isAddingAssignment && (
                   <div className="p-2 rounded space-y-1.5" style={{ background: 'var(--surface2)' }}>
                     <div>
-                      <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Field *</label>
+                      <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.fieldLabel')}</label>
                       <select
                         value={assignFieldId ?? ''}
                         onChange={(e) => setAssignFieldId(e.target.value ? Number(e.target.value) : null)}
                         className="agraria-input w-full"
                       >
-                        <option value="">Select field...</option>
+                        <option value="">{t('irrigation.selectField')}</option>
                         {fields.map((f) => (
                           <option key={f.id} value={f.id}>{f.name}</option>
                         ))}
@@ -465,7 +467,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>Start Date *</label>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.startDateLabel')}</label>
                         <input
                           type="date"
                           value={assignStartDate}
@@ -474,14 +476,14 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>End Date</label>
+                        <label className="text-[10px] font-medium block mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.endDateLabel')}</label>
                         <input
                           type="date"
                           value={assignEndDate}
                           onChange={(e) => setAssignEndDate(e.target.value)}
                           className="agraria-input w-full"
                         />
-                        <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>Leave blank = still at field</p>
+                        <p className="text-[9px] mt-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.endDateHint')}</p>
                       </div>
                     </div>
                     <button
@@ -489,10 +491,10 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                       disabled={saving || !assignFieldId || !assignStartDate}
                       className="agraria-btn-primary w-full text-xs"
                     >
-                      {saving ? 'Saving...' : 'Assign to Field'}
+                      {saving ? t('irrigation.saving') : t('irrigation.assignToField')}
                     </button>
                     <p className="text-[9px]" style={{ color: 'var(--tx3)' }}>
-                      Previous open assignment will be auto-closed the day before this start date.
+                      {t('irrigation.autoCloseNote')}
                     </p>
                   </div>
                 )}
@@ -500,7 +502,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 {/* Assignment list */}
                 {equipAssignments.length === 0 ? (
                   <p className="text-[10px] py-2" style={{ color: 'var(--tx3)' }}>
-                    No assignments yet. Use &quot;+ Move&quot; to assign this equipment to a field.
+                    {t('irrigation.noAssignments')}
                   </p>
                 ) : (
                   <div className="space-y-1">
@@ -525,7 +527,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                                 value={editEndDate}
                                 onChange={(e) => setEditEndDate(e.target.value)}
                                 className="agraria-input text-[10px]"
-                                placeholder="Open-ended"
+                                placeholder={t('irrigation.openEnded')}
                               />
                             </div>
                             <div className="flex gap-1">
@@ -535,14 +537,14 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                                 className="text-[10px] px-2 py-0.5 rounded font-medium"
                                 style={{ background: 'var(--orange)', color: '#fff' }}
                               >
-                                Save
+                                {t('irrigation.save')}
                               </button>
                               <button
                                 onClick={() => setEditingAssignment(null)}
                                 className="text-[10px] px-2 py-0.5 rounded font-medium"
                                 style={{ color: 'var(--tx3)' }}
                               >
-                                Cancel
+                                {t('irrigation.cancel')}
                               </button>
                             </div>
                           </div>
@@ -554,7 +556,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                                 {a.fieldName || `Field #${a.fieldId}`}
                               </span>
                               <span className="ml-1.5" style={{ color: 'var(--tx3)' }}>
-                                {a.startDate} → {a.endDate || 'present'}
+                                {a.startDate} → {a.endDate || t('irrigation.present')}
                               </span>
                             </div>
                             <div className="flex gap-1 shrink-0">
@@ -566,17 +568,17 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                                 }}
                                 className="text-[10px] px-1.5 py-0.5 rounded"
                                 style={{ color: 'var(--tx3)' }}
-                                title="Edit dates"
+                                title={t('irrigation.editDates')}
                               >
-                                Edit
+                                {t('irrigation.edit')}
                               </button>
                               <button
                                 onClick={() => handleDeleteAssignment(a)}
                                 className="text-[10px] px-1.5 py-0.5 rounded"
                                 style={{ color: '#dc2626' }}
-                                title="Delete assignment"
+                                title={t('irrigation.deleteAssignment')}
                               >
-                                Del
+                                {t('irrigation.deleteAssignment')}
                               </button>
                             </div>
                           </>
@@ -589,7 +591,7 @@ export function IrrigationPanel({ farm, fields }: IrrigationPanelProps) {
                 {/* Report URL info */}
                 {equip.reportUrl && (
                   <div className="pt-2" style={{ borderTop: '0.5px solid var(--bdr)' }}>
-                    <div className="text-[9px] font-medium mb-0.5" style={{ color: 'var(--tx3)' }}>AgSense Report URL</div>
+                    <div className="text-[9px] font-medium mb-0.5" style={{ color: 'var(--tx3)' }}>{t('irrigation.agSenseUrlLabel')}</div>
                     <div className="text-[9px] break-all p-1.5 rounded" style={{ background: 'var(--bg)', color: 'var(--tx3)', fontFamily: 'monospace' }}>
                       {equip.reportUrl.substring(0, 100)}...
                     </div>

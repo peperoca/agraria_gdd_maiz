@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
@@ -17,6 +18,7 @@ const CROP_EMOJI: Record<string, string> = {
 };
 
 export function FieldCard({ field, onClick }: FieldCardProps) {
+  const { t } = useTranslation();
   const cropConfig = getCropConfig(field.cropType ?? 'corn');
   const { fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
@@ -46,11 +48,11 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
     <button onClick={onClick} className="agraria-card w-full text-left cursor-pointer active:scale-[0.98] transition-transform">
       <div className="flex items-start justify-between mb-2">
         <span className="text-sm font-semibold" style={{ color: 'var(--tx)' }}>{field.name}</span>
-        <span className="text-[11px]" style={{ color: 'var(--tx3)' }}>{daysSinceSowing}d</span>
+        <span className="text-[11px]" style={{ color: 'var(--tx3)' }}>{daysSinceSowing}{t('field.daysAbbr')}</span>
       </div>
 
       <p className="text-xs mb-3" style={{ color: 'var(--tx2)' }}>
-        {CROP_EMOJI[getBaseCrop(field.cropType ?? 'corn')]} {cropConfig.label} &middot; Sowed: {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
+        {CROP_EMOJI[getBaseCrop(field.cropType ?? 'corn')]} {cropConfig.label} &middot; {t('dashboard.sowed')} {format(parseISO(field.sowingDate), 'MMM d, yyyy')}
       </p>
 
       {loading ? (
@@ -64,7 +66,7 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
             <span className="text-xl font-bold" style={{ color: 'var(--blue)' }}>
               {Math.round(cumulative)}
             </span>
-            <span className="text-[11px]" style={{ color: 'var(--tx3)' }}>GDD</span>
+            <span className="text-[11px]" style={{ color: 'var(--tx3)' }}>{t('field.gddUnit')}</span>
             {currentStage && (
               <span className="agraria-badge ml-auto">{currentStage.shortName}</span>
             )}
@@ -76,7 +78,7 @@ export function FieldCard({ field, onClick }: FieldCardProps) {
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{progress}%</span>
-            <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{cropConfig.maturityGdd} GDD</span>
+            <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>{cropConfig.maturityGdd} {t('field.gddUnit')}</span>
           </div>
         </>
       )}

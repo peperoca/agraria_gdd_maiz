@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Field } from '../types';
 import { FieldCard } from './FieldCard';
 import { WeatherStationCard } from './WeatherStationCard';
@@ -13,21 +14,23 @@ interface DashboardProps {
 }
 
 export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName, stationDistanceKm, canWrite = true }: DashboardProps) {
+  const { t } = useTranslation();
+
   if (fields.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-5xl mb-4">🌽</div>
         <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--tx)' }}>
-          {canWrite ? 'No fields yet' : 'No fields'}
+          {canWrite ? t('dashboard.noFieldsTitle') : t('dashboard.noFieldsTitle')}
         </h2>
         <p className="text-xs mb-6" style={{ color: 'var(--tx3)' }}>
           {canWrite
-            ? 'Add your first field to start tracking Growing Degree Days.'
-            : 'This shared farm has no fields yet.'}
+            ? t('dashboard.noFieldsDesc')
+            : t('dashboard.noFieldsSharedDesc')}
         </p>
         {canWrite && (
           <button onClick={onAddField} className="agraria-btn-primary">
-            + Add Your First Field
+            {t('dashboard.addFirstField')}
           </button>
         )}
       </div>

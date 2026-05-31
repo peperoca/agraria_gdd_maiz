@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getShares, createShare, deleteShare, searchUsers } from '../utils/api';
 import type { ShareRaw, UserSearchResult } from '../utils/api';
 
@@ -9,6 +10,7 @@ interface ShareManagerProps {
 }
 
 export function ShareManager({ entityType, entityId, entityName }: ShareManagerProps) {
+  const { t } = useTranslation();
   const [shares, setShares] = useState<ShareRaw[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -84,10 +86,10 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
   return (
     <div className="agraria-card">
       <div className="sec-label">
-        Share {entityType === 'farm' ? 'Farm' : 'Field'}: {entityName}
+        {t('sharing.title', { type: entityType === 'farm' ? 'Farm' : 'Field', name: entityName })}
       </div>
       <p className="text-[11px] mb-3" style={{ color: tx3 }}>
-        Shared users get read-only access — they can view data but cannot edit.
+        {t('sharing.description')}
       </p>
 
       {/* Add share */}
@@ -97,7 +99,7 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Type username to share..."
+            placeholder={t('sharing.inputPlaceholder')}
             className="agraria-input flex-1 text-[12px]"
             disabled={saving}
           />
@@ -107,7 +109,7 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
               disabled={saving || !username.trim()}
               className="agraria-btn agraria-btn-primary text-[11px] px-3"
             >
-              {saving ? '...' : 'Share'}
+              {saving ? '...' : t('sharing.shareButton')}
             </button>
           )}
         </div>
@@ -133,7 +135,7 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
         )}
 
         {searching && (
-          <div className="text-[10px] mt-1" style={{ color: tx3 }}>Searching...</div>
+          <div className="text-[10px] mt-1" style={{ color: tx3 }}>{t('sharing.searching')}</div>
         )}
       </div>
 
@@ -143,9 +145,9 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
 
       {/* Current shares list */}
       {loading ? (
-        <div className="text-[11px]" style={{ color: tx3 }}>Loading...</div>
+        <div className="text-[11px]" style={{ color: tx3 }}>{t('sharing.loading')}</div>
       ) : shares.length === 0 ? (
-        <div className="text-[11px]" style={{ color: tx3 }}>Not shared with anyone yet.</div>
+        <div className="text-[11px]" style={{ color: tx3 }}>{t('sharing.notSharedYet')}</div>
       ) : (
         <div className="space-y-1">
           {shares.map((s) => (
@@ -158,14 +160,14 @@ export function ShareManager({ entityType, entityId, entityName }: ShareManagerP
                 <span className="text-[12px] font-medium" style={{ color: 'var(--tx)' }}>
                   {s.sharedWithUsername}
                 </span>
-                <span className="text-[10px] ml-2" style={{ color: tx3 }}>read-only</span>
+                <span className="text-[10px] ml-2" style={{ color: tx3 }}>{t('sharing.readOnly')}</span>
               </div>
               <button
                 onClick={() => handleRemove(s.id)}
                 className="text-[10px] px-2 py-0.5 rounded"
                 style={{ color: '#dc2626', background: '#dc262610' }}
               >
-                Remove
+                {t('sharing.remove')}
               </button>
             </div>
           ))}

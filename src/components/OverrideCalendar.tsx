@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isBefore, isAfter } from 'date-fns';
 import type { DailyRain, DailyIrrigation, FieldOverride } from '../types';
 
@@ -13,11 +14,12 @@ interface OverrideCalendarProps {
   onClose: () => void;
 }
 
-const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_KEYS = ['calendar.mon', 'calendar.tue', 'calendar.wed', 'calendar.thu', 'calendar.fri', 'calendar.sat', 'calendar.sun'];
 
 export function OverrideCalendar({
   sowingDate, rainData, irrigationData, overrides, onSave, onDelete, onClose,
 }: OverrideCalendarProps) {
+  const { t } = useTranslation();
   const today = new Date();
   const sowDate = parseISO(sowingDate);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(today));
@@ -89,13 +91,13 @@ export function OverrideCalendar({
   return (
     <div className="agraria-card">
       <div className="flex items-center justify-between mb-3">
-        <div className="sec-label mb-0">Edit Daily Values</div>
+        <div className="sec-label mb-0">{t('calendar.title')}</div>
         <button
           onClick={onClose}
           className="text-[11px] px-2 py-1 rounded"
           style={{ color: 'var(--tx3)' }}
         >
-          Close
+          {t('calendar.close')}
         </button>
       </div>
 
@@ -122,9 +124,9 @@ export function OverrideCalendar({
 
       {/* Day name headers */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
-        {DAY_NAMES.map((d) => (
-          <div key={d} className="text-center text-[10px] font-medium py-0.5" style={{ color: 'var(--tx3)' }}>
-            {d}
+        {DAY_KEYS.map((key) => (
+          <div key={key} className="text-center text-[10px] font-medium py-0.5" style={{ color: 'var(--tx3)' }}>
+            {t(key)}
           </div>
         ))}
       </div>
@@ -179,30 +181,30 @@ export function OverrideCalendar({
           <div className="text-xs font-medium mb-2" style={{ color: 'var(--tx)' }}>
             {format(parseISO(selectedDate), 'MMMM d, yyyy')}
             {overrideMap.has(selectedDate) && (
-              <span className="ml-2 text-[10px]" style={{ color: 'var(--blue)' }}>(overridden)</span>
+              <span className="ml-2 text-[10px]" style={{ color: 'var(--blue)' }}>{t('calendar.overridden')}</span>
             )}
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <label className="text-[11px] w-16 shrink-0" style={{ color: '#1a9988' }}>Rain (mm)</label>
+              <label className="text-[11px] w-16 shrink-0" style={{ color: '#1a9988' }}>{t('calendar.rainLabel')}</label>
               <input
                 type="number"
                 value={editRain}
                 onChange={(e) => setEditRain(e.target.value)}
-                placeholder={`Station: ${rainMap.get(selectedDate)?.toFixed(1) ?? '—'}`}
+                placeholder={t('calendar.rainPlaceholder', { value: rainMap.get(selectedDate)?.toFixed(1) ?? '—' })}
                 min="0"
                 step="0.1"
                 className="agraria-input text-sm flex-1"
               />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[11px] w-16 shrink-0" style={{ color: 'var(--orange)' }}>Irrig. (mm)</label>
+              <label className="text-[11px] w-16 shrink-0" style={{ color: 'var(--orange)' }}>{t('calendar.irrigLabel')}</label>
               <input
                 type="number"
                 value={editIrrig}
                 onChange={(e) => setEditIrrig(e.target.value)}
-                placeholder={`Equip: ${irrigMap.get(selectedDate)?.toFixed(1) ?? '—'}`}
+                placeholder={t('calendar.irrigPlaceholder', { value: irrigMap.get(selectedDate)?.toFixed(1) ?? '—' })}
                 min="0"
                 step="0.1"
                 className="agraria-input text-sm flex-1"
@@ -216,7 +218,7 @@ export function OverrideCalendar({
               className="flex-1 py-1.5 rounded-[var(--r)] text-[11px] font-medium"
               style={{ background: 'var(--bg)', color: 'var(--tx2)', border: '1px solid var(--bdr)' }}
             >
-              Cancel
+              {t('calendar.cancel')}
             </button>
             {overrideMap.has(selectedDate) && (
               <button
@@ -225,7 +227,7 @@ export function OverrideCalendar({
                 className="py-1.5 px-3 rounded-[var(--r)] text-[11px] font-medium"
                 style={{ background: 'transparent', color: 'var(--tx3)', border: '1px solid var(--bdr)' }}
               >
-                Reset
+                {t('calendar.reset')}
               </button>
             )}
             <button
@@ -233,14 +235,14 @@ export function OverrideCalendar({
               disabled={saving}
               className="agraria-btn-primary flex-1 text-[11px]"
             >
-              {saving ? 'Saving...' : 'OK'}
+              {saving ? t('calendar.saving') : t('calendar.ok')}
             </button>
           </div>
         </div>
       )}
 
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        Tap a date to override rain or irrigation values. Overrides replace station/equipment data for that day.
+        {t('calendar.footerNote')}
       </p>
     </div>
   );

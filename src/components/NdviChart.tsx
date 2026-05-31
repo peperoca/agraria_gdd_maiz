@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,6 +26,7 @@ interface NdviChartProps {
 }
 
 export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviChartProps) {
+  const { t } = useTranslation();
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const green = '#2d8a4e';
@@ -36,14 +38,14 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
     [altKcData],
   );
 
-  const activeLabel = activeFormula === 'nonlinear' ? 'Kc Non-linear' : 'Kc Linear';
-  const altLabel = activeFormula === 'nonlinear' ? 'Kc Linear' : 'Kc Non-linear';
+  const activeLabel = activeFormula === 'nonlinear' ? t('charts.kcNonlinearLabel') : t('charts.kcLinearLabel');
+  const altLabel = activeFormula === 'nonlinear' ? t('charts.kcLinearLabel') : t('charts.kcNonlinearLabel');
   const purple = '#7c3aed';
 
   const chartData = useMemo(() => {
     const datasets = [
       {
-        label: 'NDVI',
+        label: t('charts.ndviLabel'),
         data: sorted.map((d) => d.ndviMean),
         borderColor: green,
         backgroundColor: `${green}30`,
@@ -115,7 +117,7 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
       },
       yNdvi: {
         position: 'left',
-        title: { display: true, text: 'NDVI', font: { size: 10 }, color: green },
+        title: { display: true, text: t('charts.ndviAxis'), font: { size: 10 }, color: green },
         ticks: { font: { size: 9 }, color: green },
         grid: { color: `${tx3}15` },
         min: 0,
@@ -123,7 +125,7 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
       },
       yKc: {
         position: 'right',
-        title: { display: true, text: 'Kc', font: { size: 10 }, color: orange },
+        title: { display: true, text: t('charts.kcAxis'), font: { size: 10 }, color: orange },
         ticks: { font: { size: 9 }, color: orange },
         grid: { display: false },
         min: 0,
@@ -136,23 +138,23 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">Vegetation Index (NDVI) & Crop Coefficient (Kc)</div>
+      <div className="sec-label">{t('charts.ndviTitle')}</div>
       {latest && (
         <div className="agraria-info-row grid grid-cols-3 gap-2 mb-3">
           <div>
-            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>NDVI</div>
+            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.ndviLabel')}</div>
             <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
               {latest.ndviMean.toFixed(3)}
             </div>
           </div>
           <div>
-            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Kc</div>
+            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.kcLabel')}</div>
             <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
               {latest.kc.toFixed(3)}
             </div>
           </div>
           <div>
-            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Date</div>
+            <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.date')}</div>
             <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
               {format(parseISO(latest.date), 'MMM d')}
             </div>
@@ -163,9 +165,9 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
         <Line data={chartData} options={options} />
       </div>
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        Sentinel-2 NDVI (green). Solid Kc = active formula for ETc. Dashed Kc = alternative. Cloud-filtered.
+        {t('charts.ndviFootnote')}
         {onDateClick && (
-          <span style={{ color: 'var(--blue)' }}> Tap a point to view satellite imagery 🛰</span>
+          <span style={{ color: 'var(--blue)' }}> {t('charts.ndviTapToView')}</span>
         )}
       </p>
     </div>

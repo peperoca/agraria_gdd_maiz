@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -106,6 +107,7 @@ function formatTime(dateutcMs: number): string {
 }
 
 export function WeatherStationCard({ stationMac, stationName, stationDistanceKm }: WeatherStationCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [raw, setRaw] = useState<WeatherReadingRaw[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -281,7 +283,7 @@ export function WeatherStationCard({ stationMac, stationName, stationDistanceKm 
     return (
       <div className="agraria-card" style={{ opacity: 0.6 }}>
         <div className="text-xs" style={{ color: 'var(--tx3)' }}>
-          {loading ? 'Loading station data...' : 'No station assigned'}
+          {loading ? t('weather.loadingStation') : t('weather.noStationAssigned')}
         </div>
       </div>
     );
@@ -302,43 +304,43 @@ export function WeatherStationCard({ stationMac, stationName, stationDistanceKm 
             {stationName || stationMac}
           </div>
           <div className="text-[10px]" style={{ color: 'var(--tx3)' }}>
-            Last reading: {formatTime(latest.dateutc)}
+            {t('weather.lastReading', { time: formatTime(latest.dateutc) })}
           </div>
         </div>
         <div className="text-[10px] font-medium px-2 py-0.5 rounded"
           style={{ background: 'var(--surface2)', color: 'var(--tx3)' }}>
-          {expanded ? 'Collapse' : '7-day chart'}
+          {expanded ? t('weather.collapse') : t('weather.sevenDayChart')}
         </div>
       </div>
 
       {/* Summary grid */}
       <div className="grid grid-cols-5 gap-1.5">
         <div className="text-center">
-          <div className="text-[10px]" style={{ color: orange }}>Temp</div>
+          <div className="text-[10px]" style={{ color: orange }}>{t('weather.temp')}</div>
           <div className="text-sm font-bold" style={{ color: orange }}>
             {latest.tempf !== null ? `${fToC(latest.tempf).toFixed(1)}°` : '—'}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[10px]" style={{ color: blue }}>Humid</div>
+          <div className="text-[10px]" style={{ color: blue }}>{t('weather.humid')}</div>
           <div className="text-sm font-bold" style={{ color: blue }}>
             {latest.humidity !== null ? `${latest.humidity.toFixed(0)}%` : '—'}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[10px]" style={{ color: gray }}>Wind</div>
+          <div className="text-[10px]" style={{ color: gray }}>{t('weather.wind')}</div>
           <div className="text-sm font-bold" style={{ color: gray }}>
             {latest.windspeedmph !== null ? `${mphToKmh(latest.windspeedmph).toFixed(1)}` : '—'}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[10px]" style={{ color: yellow }}>Solar</div>
+          <div className="text-[10px]" style={{ color: yellow }}>{t('weather.solar')}</div>
           <div className="text-sm font-bold" style={{ color: yellow }}>
             {latest.solarradiation !== null ? `${latest.solarradiation.toFixed(0)}` : '—'}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[10px]" style={{ color: teal }}>Rain</div>
+          <div className="text-[10px]" style={{ color: teal }}>{t('weather.rain')}</div>
           <div className="text-sm font-bold" style={{ color: teal }}>
             {latest.dailyrainin !== null ? `${inToMm(latest.dailyrainin).toFixed(1)}` : '—'}
           </div>
@@ -355,7 +357,7 @@ export function WeatherStationCard({ stationMac, stationName, stationDistanceKm 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
           <span>
-            Station is <strong>{stationDistanceKm.toFixed(0)} km</strong> away. ETo and weather estimates may be less accurate at this distance.
+            {t('weather.distanceWarning', { distance: stationDistanceKm.toFixed(0) })}
           </span>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { getCropConfig, getKeyStages, getBaseCrop, type CropType } from '../utils/cropConfig';
 import type { CornStage, DailyGdd } from '../types';
 import type { PtuDay } from '../utils/photoperiod';
@@ -53,6 +54,7 @@ function buildSecondaryDateMap(
 }
 
 export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuData, vernData }: GrowthStagesProps) {
+  const { t } = useTranslation();
   const config = getCropConfig(cropType);
   const allStages = config.stages;
   const keyStageNames = getKeyStages(cropType);
@@ -102,7 +104,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
 
   return (
     <div className="agraria-card space-y-3">
-      <div className="sec-label">Growth Stages</div>
+      <div className="sec-label">{t('growthStages.title')}</div>
 
       {/* Stage progress dots */}
       <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
@@ -153,7 +155,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
             </span>
             {stageDateMap.get(currentStage.shortName) && (
               <span className="text-[10px]" style={{ color: 'var(--it)', opacity: 0.6 }}>
-                reached {format(parseISO(stageDateMap.get(currentStage.shortName)!), 'MMM d')}
+                {t('growthStages.reached', { date: format(parseISO(stageDateMap.get(currentStage.shortName)!), 'MMM d') })}
               </span>
             )}
           </div>
@@ -173,7 +175,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
             </span>
             {secondaryStageDateMap.get(currentStageSecondary.shortName) && (
               <span className="text-[10px]" style={{ color: 'var(--it)', opacity: 0.6 }}>
-                reached {format(parseISO(secondaryStageDateMap.get(currentStageSecondary.shortName)!), 'MMM d')}
+                {t('growthStages.reached', { date: format(parseISO(secondaryStageDateMap.get(currentStageSecondary.shortName)!), 'MMM d') })}
               </span>
             )}
           </div>
@@ -187,16 +189,16 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
       {nextStage && (
         <div className="rounded-[var(--r)] p-2.5" style={{ background: 'var(--wb)' }}>
           <p className="text-[11px]" style={{ color: 'var(--wt)' }}>
-            <span className="font-semibold">Next (GDD):</span> {nextStage.shortName} — {nextStage.name} at {nextStage.gdd} GDD
+            <span className="font-semibold">{t('growthStages.nextGdd', { stage: nextStage.shortName, name: nextStage.name, gdd: nextStage.gdd })}</span>
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--wt)', opacity: 0.75 }}>
-            {Math.round(nextStage.gdd - cumulativeGdd)} GDD remaining
+            {t('growthStages.gddRemaining', { amount: Math.round(nextStage.gdd - cumulativeGdd) })}
           </p>
           {hasSecondary && nextStageSecondary && (() => {
             const threshold = getSecondaryThreshold(nextStageSecondary);
             return threshold != null ? (
               <p className="text-[11px] mt-1" style={{ color: 'var(--wt)', opacity: 0.75 }}>
-                <span className="font-semibold">Next ({secondaryLabel}):</span> {nextStageSecondary.shortName} at {threshold.toLocaleString()} {secondaryLabel} — {Math.round(threshold - cumulativeSecondary).toLocaleString()} remaining
+                <span className="font-semibold">{t('growthStages.nextSecondary', { label: secondaryLabel, stage: nextStageSecondary.shortName, value: `${threshold.toLocaleString()} ${secondaryLabel}` })}</span> — {t('growthStages.secondaryRemaining', { amount: Math.round(threshold - cumulativeSecondary).toLocaleString() })}
               </p>
             ) : null;
           })()}
@@ -206,19 +208,19 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
       {/* All stages table */}
       <details className="text-xs">
         <summary className="cursor-pointer hover:opacity-80 font-medium" style={{ color: 'var(--tx3)' }}>
-          View all stages
+          {t('growthStages.viewAllStages')}
         </summary>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '0.5px solid var(--bdr2)' }}>
                 <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}></th>
-                <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Stage</th>
-                <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Name</th>
-                <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>GDD</th>
+                <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('growthStages.stageCol')}</th>
+                <th className="text-left py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('growthStages.nameCol')}</th>
+                <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('growthStages.gddCol')}</th>
                 {hasSecondary && <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{secondaryLabel}</th>}
-                <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>Date</th>
-                {hasSecondary && <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{secondaryLabel} Date</th>}
+                <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{t('growthStages.dateCol')}</th>
+                {hasSecondary && <th className="text-right py-1 px-1.5 font-semibold text-[11px]" style={{ color: 'var(--tx3)' }}>{secondaryLabel} {t('growthStages.dateCol')}</th>}
               </tr>
             </thead>
             <tbody>

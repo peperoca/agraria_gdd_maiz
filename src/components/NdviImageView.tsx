@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, parseISO } from 'date-fns';
 import type { NdviReading } from '../types';
 
@@ -17,6 +18,7 @@ interface NdviImageViewProps {
 }
 
 export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBack }: NdviImageViewProps) {
+  const { t } = useTranslation();
   const sorted = [...ndviData].sort((a, b) => a.date.localeCompare(b.date));
   const [selectedDate, setSelectedDate] = useState(initialDate || (sorted.length > 0 ? sorted[sorted.length - 1].date : ''));
   const [trueColorUrl, setTrueColorUrl] = useState<string | null>(null);
@@ -92,10 +94,10 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to {fieldName}
+            {t('ndviImage.backTo', { name: fieldName })}
           </button>
         </div>
-        <div className="sec-label">Satellite Imagery</div>
+        <div className="sec-label">{t('ndviImage.title')}</div>
 
         {/* Date navigation */}
         <div className="flex items-center justify-between gap-2 mt-2">
@@ -122,7 +124,7 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
           >
             {sorted.map((r) => (
               <option key={r.date} value={r.date}>
-                {format(parseISO(r.date), 'MMM d, yyyy')} — NDVI: {r.ndviMean.toFixed(3)}
+                {format(parseISO(r.date), 'MMM d, yyyy')} — {t('ndviImage.ndvi')}: {r.ndviMean.toFixed(3)}
               </option>
             ))}
           </select>
@@ -147,19 +149,19 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
         {selectedReading && (
           <div className="agraria-info-row grid grid-cols-3 gap-2 mt-3">
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>NDVI</div>
+              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('ndviImage.ndvi')}</div>
               <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                 {selectedReading.ndviMean.toFixed(3)}
               </div>
             </div>
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Kc</div>
+              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('ndviImage.kc')}</div>
               <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                 {selectedReading.kc.toFixed(3)}
               </div>
             </div>
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Cloud</div>
+              <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('ndviImage.cloud')}</div>
               <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                 {selectedReading.cloudPct !== null ? `${selectedReading.cloudPct.toFixed(0)}%` : '—'}
               </div>
@@ -172,7 +174,7 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
       {loading && (
         <div className="agraria-card text-center py-8">
           <div className="text-2xl mb-2">🛰</div>
-          <p className="text-xs" style={{ color: 'var(--tx3)' }}>Loading satellite imagery...</p>
+          <p className="text-xs" style={{ color: 'var(--tx3)' }}>{t('ndviImage.loadingSatellite')}</p>
         </div>
       )}
 
@@ -186,7 +188,7 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
 
       {!loading && trueColorUrl && (
         <div className="agraria-card">
-          <div className="sec-label">True Color</div>
+          <div className="sec-label">{t('ndviImage.trueColor')}</div>
           <img
             src={trueColorUrl}
             alt="True color satellite"
@@ -194,14 +196,14 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
             style={{ borderColor: 'var(--bdr)' }}
           />
           <p className="text-[10px] mt-1.5" style={{ color: 'var(--tx3)' }}>
-            Sentinel-2 RGB (B4/B3/B2) — {format(parseISO(selectedDate), 'MMMM d, yyyy')}
+            {t('ndviImage.trueColorCaption', { date: format(parseISO(selectedDate), 'MMMM d, yyyy') })}
           </p>
         </div>
       )}
 
       {!loading && ndviUrl && (
         <div className="agraria-card">
-          <div className="sec-label">NDVI Vegetation Index</div>
+          <div className="sec-label">{t('ndviImage.ndviVegetation')}</div>
           <img
             src={ndviUrl}
             alt="NDVI visualization"
@@ -210,11 +212,11 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
           />
           {/* Legend */}
           <div className="flex items-center gap-1 mt-2">
-            <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>Low</span>
+            <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>{t('ndviImage.legendLow')}</span>
             <div className="flex-1 h-2.5 rounded-full" style={{
               background: 'linear-gradient(to right, #804d1a, #cca000, #80cc00, #2d8a4e, #0d6633)',
             }} />
-            <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>High</span>
+            <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>{t('ndviImage.legendHigh')}</span>
           </div>
           <div className="flex justify-between mt-0.5">
             <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>-0.2</span>
@@ -224,7 +226,7 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
             <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>0.8+</span>
           </div>
           <p className="text-[10px] mt-1" style={{ color: 'var(--tx3)' }}>
-            Green = healthy vegetation. Gray = clouds. Brown = bare soil.
+            {t('ndviImage.ndviExplanation')}
           </p>
         </div>
       )}

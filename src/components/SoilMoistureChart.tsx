@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -37,6 +38,7 @@ function smColor(sm: number): string {
 }
 
 export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
+  const { t } = useTranslation();
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const surface = styles.getPropertyValue('--surface').trim() || '#fff';
@@ -53,7 +55,7 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
     datasets: [
       {
         type: 'line' as const,
-        label: 'Soil Moisture (%)',
+        label: t('charts.soilMoistureTitle'),
         data: data.map((d) => d.smRelative),
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.12)',
@@ -110,7 +112,7 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
             const idx = ctx.dataIndex;
             const d = data[idx];
             if (ctx.datasetIndex === 0) {
-              return d.smRelative !== null ? `SM: ${d.smRelative.toFixed(1)}%` : 'SM: bootstrapping...';
+              return d.smRelative !== null ? `SM: ${d.smRelative.toFixed(1)}%` : t('charts.smBootstrapping');
             }
             return `VV: ${d.vvDb.toFixed(2)} dB${d.ndviUsed != null ? ` (NDVI corr: ${d.ndviUsed.toFixed(2)})` : ''}`;
           },
@@ -124,7 +126,7 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
             yScaleID: 'ySm',
             backgroundColor: 'rgba(220, 38, 38, 0.06)',
             borderWidth: 0,
-            label: { content: 'Dry', display: true, position: { x: 'start', y: 'center' }, font: { size: 9 }, color: '#dc262680' },
+            label: { content: t('charts.dry'), display: true, position: { x: 'start', y: 'center' }, font: { size: 9 }, color: '#dc262680' },
           },
           wetZone: {
             type: 'box',
@@ -132,7 +134,7 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
             yScaleID: 'ySm',
             backgroundColor: 'rgba(37, 99, 235, 0.06)',
             borderWidth: 0,
-            label: { content: 'Wet', display: true, position: { x: 'start', y: 'center' }, font: { size: 9 }, color: '#2563eb80' },
+            label: { content: t('charts.wet'), display: true, position: { x: 'start', y: 'center' }, font: { size: 9 }, color: '#2563eb80' },
           },
         },
       },
@@ -152,14 +154,14 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
         position: 'left',
         min: 0,
         max: 100,
-        title: { display: true, text: 'SM %', font: { size: 10 }, color: '#2563eb' },
+        title: { display: true, text: t('charts.smPercent'), font: { size: 10 }, color: '#2563eb' },
         ticks: { font: { size: 9 }, color: '#2563eb' },
         grid: { color: 'rgba(0,0,0,0.05)' },
       },
       yVv: {
         type: 'linear',
         position: 'right',
-        title: { display: true, text: 'VV dB', font: { size: 10 }, color: '#9ca3af' },
+        title: { display: true, text: t('charts.vvDb'), font: { size: 10 }, color: '#9ca3af' },
         ticks: { font: { size: 9 }, color: '#9ca3af' },
         grid: { display: false },
       },
@@ -168,24 +170,24 @@ export function SoilMoistureChart({ data }: SoilMoistureChartProps) {
 
   return (
     <div className="agraria-card">
-      <div className="sec-label">Soil Moisture (Sentinel-1)</div>
+      <div className="sec-label">{t('charts.soilMoistureTitle')}</div>
 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>Latest SM</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>{t('charts.latestSm')}</div>
           <div className="text-lg font-semibold" style={{ color: latest ? smColor(latest.smRelative!) : 'var(--tx3)' }}>
             {latest ? `${latest.smRelative!.toFixed(0)}%` : '—'}
           </div>
         </div>
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>Date</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>{t('charts.date')}</div>
           <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
             {latest ? format(parseISO(latest.date), 'MMM d') : '—'}
           </div>
         </div>
         <div>
-          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>VV Range</div>
+          <div className="text-[11px] opacity-75" style={{ color: 'var(--tx3)' }}>{t('charts.vvRange')}</div>
           <div className="text-lg font-semibold" style={{ color: 'var(--it)' }}>
             {spread} dB
           </div>

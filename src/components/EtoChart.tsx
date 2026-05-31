@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,6 +39,7 @@ interface EtoChartProps {
 }
 
 export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoChartProps) {
+  const { t } = useTranslation();
   const styles = getComputedStyle(document.documentElement);
   const blue = styles.getPropertyValue('--blue').trim() || '#185FA5';
   const blueM = styles.getPropertyValue('--blue-m').trim() || '#378ADD';
@@ -91,7 +93,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
     const datasets = [
       {
         type: 'bar' as const,
-        label: 'Daily ETo (mm)',
+        label: t('charts.dailyEto'),
         data: data.map((d) => d.eto),
         backgroundColor: data.map((d) =>
           d.source && d.source !== 'station' ? `${blueM}40` : `${blueM}80`
@@ -108,7 +110,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         ? [
             {
               type: 'bar' as const,
-              label: 'Daily Rain (mm)',
+              label: t('charts.dailyRain'),
               data: labels.map((date) => rainMap.get(date)?.rain ?? 0),
               backgroundColor: `${teal}70`,
               borderColor: teal,
@@ -123,7 +125,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         ? [
             {
               type: 'bar' as const,
-              label: 'Daily Irrigation (mm)',
+              label: t('charts.dailyIrrig'),
               data: labels.map((date) => irrigMap.get(date)?.depthMm ?? 0),
               backgroundColor: `${orange}70`,
               borderColor: orange,
@@ -136,7 +138,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         : []),
       {
         type: 'line' as const,
-        label: 'Cumulative ETo (mm)',
+        label: t('charts.cumEto'),
         data: data.map((d) => d.cumulative),
         borderColor: blue,
         backgroundColor: 'transparent',
@@ -151,7 +153,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         ? [
             {
               type: 'line' as const,
-              label: 'Cumulative Rain (mm)',
+              label: t('charts.cumRain'),
               data: labels.map((date) => rainMap.get(date)?.cumulative ?? null),
               borderColor: teal,
               backgroundColor: 'transparent',
@@ -169,7 +171,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         ? [
             {
               type: 'line' as const,
-              label: 'Cumulative Irrigation (mm)',
+              label: t('charts.cumIrrig'),
               data: labels.map((date) => cumIrrigByDate.get(date) ?? null),
               borderColor: orange,
               backgroundColor: 'transparent',
@@ -199,7 +201,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
     // Left outer axis: Daily ETo + Irrigation (similar magnitude)
     yEto: {
       position: 'left',
-      title: { display: true, text: hasIrrigation ? 'ETo / Irrig. (mm)' : 'Daily ETo (mm)', font: { size: 10 }, color: blueM },
+      title: { display: true, text: hasIrrigation ? t('charts.etoIrrigAxis') : t('charts.etoAxis'), font: { size: 10 }, color: blueM },
       ticks: { font: { size: 9 }, color: blueM },
       grid: { color: `${tx3}15` },
       beginAtZero: true,
@@ -208,7 +210,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
     // Right axis: Cumulative (shared scale for ETo & Rain comparison)
     yCum: {
       position: 'right',
-      title: { display: true, text: 'Cumulative (mm)', font: { size: 10 }, color: tx3 },
+      title: { display: true, text: t('charts.cumAxis'), font: { size: 10 }, color: tx3 },
       ticks: { font: { size: 9 }, color: tx3 },
       grid: { display: false },
       beginAtZero: true,
@@ -219,7 +221,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
     // Left inner axis: Daily Rain (own scale — rain events can be much larger than ETo)
     scales.yRain = {
       position: 'left',
-      title: { display: true, text: 'Daily Rain (mm)', font: { size: 10 }, color: teal },
+      title: { display: true, text: t('charts.rainAxis'), font: { size: 10 }, color: teal },
       ticks: { font: { size: 9 }, color: teal },
       grid: { display: false },
       beginAtZero: true,
@@ -260,12 +262,12 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
   const lastCumIrrig = hasIrrigation ? cumIrrigByDate.get(labels[labels.length - 1]) ?? 0 : 0;
 
   const chartTitle = hasRain && hasIrrigation
-    ? 'Water Balance (ETo, Rainfall & Irrigation)'
+    ? t('charts.etoRainIrrigTitle')
     : hasIrrigation
-    ? 'Water Balance (ETo & Irrigation)'
+    ? t('charts.etoIrrigTitle')
     : hasRain
-    ? 'Water Balance (ETo & Rainfall)'
-    : 'Reference Evapotranspiration (ETo)';
+    ? t('charts.etoRainTitle')
+    : t('charts.etoTitle');
 
   // Determine grid columns for summary row
   const summaryColCount = 2 + (hasRain ? 2 : 0) + (hasIrrigation ? 1 : 0);
@@ -286,13 +288,13 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
           {lastEto && (
             <>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>ETo Daily</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.etoDaily')}</div>
                 <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                   {lastEto.eto.toFixed(2)} <span className="text-[11px] font-normal opacity-70">mm</span>
                 </div>
               </div>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>ETo Cum.</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.etoCum')}</div>
                 <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                   {lastEto.cumulative.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
                 </div>
@@ -302,13 +304,13 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
           {lastRain && (
             <>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Rain Daily</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.rainDaily')}</div>
                 <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                   {lastRain.rain.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
                 </div>
               </div>
               <div>
-                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>Rain Cum.</div>
+                <div className="text-[11px] opacity-75" style={{ color: 'var(--it)' }}>{t('charts.rainCum')}</div>
                 <div className="text-base font-semibold" style={{ color: 'var(--it)' }}>
                   {lastRain.cumulative.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
                 </div>
@@ -317,7 +319,7 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
           )}
           {hasIrrigation && (
             <div>
-              <div className="text-[11px] opacity-75" style={{ color: orange }}>Irrig. Cum.</div>
+              <div className="text-[11px] opacity-75" style={{ color: orange }}>{t('charts.irrigCum')}</div>
               <div className="text-base font-semibold" style={{ color: orange }}>
                 {lastCumIrrig.toFixed(1)} <span className="text-[11px] font-normal opacity-70">mm</span>
               </div>
@@ -330,9 +332,11 @@ export function EtoChart({ data, rainData, irrigationData, onTitleClick }: EtoCh
         <Chart type="bar" data={chartData} options={options} />
       </div>
       <p className="text-[10px] mt-2" style={{ color: 'var(--tx3)' }}>
-        {hasRain || hasIrrigation
-          ? `ETo: FAO Penman-Monteith. Blue bars = daily ETo${hasRain ? ', Teal bars = daily rainfall' : ''}${hasIrrigation ? ', Green bars = daily irrigation' : ''}, Lines = cumulative. Each metric has its own axis scale.`
-          : 'FAO Penman-Monteith method. Bars = daily ETo (left axis), Line = cumulative (right axis).'}
+        {hasRain && hasIrrigation
+          ? t('charts.etoFootnoteRainIrrig')
+          : hasRain
+          ? t('charts.etoFootnoteRain')
+          : t('charts.etoFootnote')}
       </p>
     </div>
   );
