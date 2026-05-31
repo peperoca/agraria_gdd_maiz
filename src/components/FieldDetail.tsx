@@ -4,8 +4,8 @@ import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride } from '../utils/api';
-import type { FieldOverride } from '../types';
+import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons } from '../utils/api';
+import type { FieldOverride, Season } from '../types';
 import { applyRainOverrides, applyIrrigationOverrides } from '../utils/applyOverrides';
 import { OverrideCalendar } from './OverrideCalendar';
 import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
@@ -32,7 +32,29 @@ interface FieldDetailProps {
 
 export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetailProps) {
   const { t } = useTranslation();
-  const cropConfig = getCropConfig(field.cropType ?? 'corn');
+
+  // Season management
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(field.seasonId ?? null);
+
+  // Fetch seasons for this field
+  useEffect(() => {
+    getSeasons(field.id)
+      .then((ss) => {
+        setSeasons(ss);
+        // Default to active season
+        const active = ss.find((s) => s.isActive);
+        if (active) setSelectedSeasonId(active.id);
+      })
+      .catch(() => setSeasons([]));
+  }, [field.id]);
+
+  // Derive active data from selected season
+  const activeSeason = seasons.find((s) => s.id === selectedSeasonId) ?? null;
+  const effectiveSowingDate = activeSeason?.sowingDate ?? field.sowingDate;
+  const effectiveCropType = activeSeason?.cropType ?? field.cropType ?? 'corn';
+
+  const cropConfig = getCropConfig(effectiveCropType);
   const { loading, error, fetchData } = useWeatherData();
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [etoData, setEtoData] = useState<DailyEto[] | null>(null);
@@ -63,14 +85,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   const ndviData = kcFormula === 'linear' ? ndviDataLinear : ndviDataNonlinear;
 
   useEffect(() => {
-    fetchData(field.sowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF, gapPref)
+    fetchData(effectiveSowingDate, field.stationMac, cropConfig.baseTempF, cropConfig.upperCapF, gapPref)
       .then((result) => {
         setGddData(result.gdd);
         setEtoData(result.eto);
         setRainData(result.rain);
       })
       .catch(() => {});
-  }, [field.sowingDate, field.stationMac, field.cropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF, gapPref]);
+  }, [effectiveSowingDate, field.stationMac, effectiveCropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF, gapPref]);
 
   // Fetch NDVI data if field has polygon
   useEffect(() => {
@@ -109,12 +131,12 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
   // Fetch irrigation readings for this field
   useEffect(() => {
-    getIrrigationReadings(field.id, field.sowingDate)
+    getIrrigationReadings(field.id, effectiveSowingDate)
       .then((raw) => {
         setIrrigationData(raw.map((r) => ({ date: r.date, depthMm: r.depth_mm })));
       })
       .catch(() => setIrrigationData(null));
-  }, [field.id, field.sowingDate]);
+  }, [field.id, effectiveSowingDate]);
 
   // Fetch manual overrides for this field
   const fetchOverrides = () => {
@@ -157,7 +179,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
     else break;
   }
   const progress = Math.min(100, Math.round((cumulative / cropConfig.maturityGdd) * 100));
-  const daysSinceSowing = differenceInDays(new Date(), parseISO(field.sowingDate));
+  const daysSinceSowing = differenceInDays(new Date(), parseISO(effectiveSowingDate));
   const hasRain = rainData && rainData.length > 0;
   const hasIrrigation = irrigationData && irrigationData.length > 0;
   const irrigMap = useMemo(() => {
@@ -169,7 +191,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   }, [irrigationData]);
 
   // ── Crop-specific indicators ──
-  const baseCrop = getBaseCrop(field.cropType ?? 'corn');
+  const baseCrop = getBaseCrop(effectiveCropType);
 
   // Soybean: compute PTU data for growth stage tracking
   const ptuData = baseCrop === 'soybean' && farmLatitude && gddData
@@ -212,13 +234,33 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
   return (
     <div className="space-y-3">
+      {/* Season selector */}
+      {seasons.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {seasons.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedSeasonId(s.id)}
+              className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors"
+              style={{
+                background: s.id === selectedSeasonId ? 'var(--blue)' : 'var(--surface2)',
+                color: s.id === selectedSeasonId ? '#fff' : 'var(--tx2)',
+                border: s.isActive ? '1.5px solid var(--blue)' : '1px solid var(--bdr)',
+              }}
+            >
+              {getCropConfig(s.cropType).label} — {format(parseISO(s.sowingDate), 'MMM yyyy')}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Summary card */}
       <div className="agraria-card">
         <div className="flex items-start justify-between mb-2">
           <div>
             <h2 className="text-base font-bold" style={{ color: 'var(--tx)' }}>{field.name}</h2>
             <p className="text-xs" style={{ color: 'var(--tx2)' }}>
-              {cropConfig.label} &middot; Sowed {format(parseISO(field.sowingDate), 'MMMM d, yyyy')} &middot; {daysSinceSowing} days ago
+              {cropConfig.label} &middot; {t('dashboard.sowed')} {format(parseISO(effectiveSowingDate), 'MMMM d, yyyy')} &middot; {daysSinceSowing}{t('field.daysAbbr')}
             </p>
           </div>
         </div>
@@ -361,7 +403,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {showOverrideCalendar && (
         <OverrideCalendar
           fieldId={field.id}
-          sowingDate={field.sowingDate}
+          sowingDate={effectiveSowingDate}
           rainData={rainData ?? []}
           irrigationData={irrigationData}
           overrides={overrides}
@@ -436,7 +478,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       )}
 
       {/* Growth stages */}
-      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={(field.cropType ?? 'corn') as import('../utils/cropConfig').CropType} ptuData={ptuData} vernData={vernData} />}
+      {gddData && <GrowthStages cumulativeGdd={cumulative} gddData={gddData} cropType={effectiveCropType as import('../utils/cropConfig').CropType} ptuData={ptuData} vernData={vernData} />}
 
       {/* Wheat & Rapeseed: Vernalization card */}
       {(baseCrop === 'wheat' || baseCrop === 'rapeseed') && gddData && !!cropConfig.vernalizationTarget && (
@@ -447,7 +489,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       {baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod && gddData && (
         <PhotoperiodCard
           latitude={farmLatitude}
-          sowingDate={field.sowingDate}
+          sowingDate={effectiveSowingDate}
           criticalPhotoperiod={cropConfig.criticalPhotoperiod}
           cropLabel={cropConfig.maturityLabel}
           gddData={gddData}

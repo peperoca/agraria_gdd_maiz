@@ -31,6 +31,7 @@ export function useFields(farmId?: number | null) {
           tawSource: f.tawSource ?? null,
           coneatGc: f.coneatGc ?? null,
           initialAswMm: f.initialAswMm ?? null,
+          seasonId: f.seasonId ?? null,
         }))
       );
     } catch (err) {

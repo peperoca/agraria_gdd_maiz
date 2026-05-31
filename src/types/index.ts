@@ -6,19 +6,31 @@ export interface FieldPolygon {
 export interface Field {
   id: number;
   name: string;
-  sowingDate: string; // ISO date string YYYY-MM-DD
-  cropType: string;
+  sowingDate: string; // From active season (or legacy field column)
+  cropType: string;   // From active season (or legacy field column)
   polygon: FieldPolygon | null;
   stationMac: string;
   stationName?: string;
   farmId?: number;
   createdAt: string;
-  // Soil water balance
-  tawMm: number | null;          // Total Available Water (mm) — FC minus PWP for root zone
-  madPct: number | null;         // Management Allowable Depletion override (0-100)
+  // Soil water balance (permanent field properties)
+  tawMm: number | null;
+  madPct: number | null;
   tawSource: 'coneat_mm' | 'coneat_apdn' | 'manual' | null;
-  coneatGc: string | null;       // CONEAT group code used
-  initialAswMm: number | null;   // Starting ASW (mm) — defaults to TAW
+  coneatGc: string | null;
+  initialAswMm: number | null;
+  // Active season reference
+  seasonId?: number | null;
+}
+
+export interface Season {
+  id: number;
+  fieldId: number;
+  cropType: string;
+  sowingDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Farm {

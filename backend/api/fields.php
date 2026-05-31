@@ -21,15 +21,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!can_read_farm($db, $farmId, $user)) json_error('Farm not found', 404);
 
         $stmt = $db->prepare("
-            SELECT f.id, f.name, f.sowing_date AS sowingDate,
-                   COALESCE(f.crop_type, 'corn') AS cropType,
+            SELECT f.id, f.name,
+                   COALESCE(s.sowing_date, f.sowing_date) AS sowingDate,
+                   COALESCE(s.crop_type, f.crop_type, 'corn') AS cropType,
                    f.polygon,
                    f.station_mac AS stationMac, f.farm_id AS farmId,
                    f.created_at AS createdAt,
                    f.taw_mm AS tawMm, f.mad_pct AS madPct,
                    f.taw_source AS tawSource, f.coneat_gc AS coneatGc,
-                   f.initial_asw_mm AS initialAswMm
+                   f.initial_asw_mm AS initialAswMm,
+                   s.id AS seasonId, s.is_active AS seasonIsActive,
+                   s.end_date AS seasonEndDate
             FROM fields f
+            LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
             WHERE f.farm_id = ?
             ORDER BY f.created_at DESC
         ");
@@ -44,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                        f.station_mac AS stationMac, f.farm_id AS farmId,
                        f.created_at AS createdAt
                 FROM fields f
+            LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
                 ORDER BY f.created_at DESC
             ");
         } else {
@@ -54,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                        f.station_mac AS stationMac, f.farm_id AS farmId,
                        f.created_at AS createdAt
                 FROM fields f
+            LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
                 WHERE f.user_id = ?
                 UNION
                 SELECT f.id, f.name, f.sowing_date AS sowingDate,
@@ -62,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                        f.station_mac AS stationMac, f.farm_id AS farmId,
                        f.created_at AS createdAt
                 FROM fields f
+            LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
                 JOIN shares sh ON sh.entity_type = 'farm' AND sh.entity_id = f.farm_id AND sh.shared_with_id = ?
                 UNION
                 SELECT f.id, f.name, f.sowing_date AS sowingDate,
@@ -70,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                        f.station_mac AS stationMac, f.farm_id AS farmId,
                        f.created_at AS createdAt
                 FROM fields f
+            LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
                 JOIN shares sh ON sh.entity_type = 'field' AND sh.entity_id = f.id AND sh.shared_with_id = ?
                 ORDER BY createdAt DESC
             ");
@@ -85,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $f['tawMm'] = $f['tawMm'] !== null ? (float) $f['tawMm'] : null;
         $f['madPct'] = $f['madPct'] !== null ? (float) $f['madPct'] : null;
         $f['initialAswMm'] = $f['initialAswMm'] !== null ? (float) $f['initialAswMm'] : null;
+        $f['seasonId'] = $f['seasonId'] !== null ? (int) $f['seasonId'] : null;
+        $f['seasonIsActive'] = isset($f['seasonIsActive']) ? (bool) $f['seasonIsActive'] : null;
+        unset($f['seasonEndDate']); // Clean up — not needed in list view
     }
 
     json_response($fields);

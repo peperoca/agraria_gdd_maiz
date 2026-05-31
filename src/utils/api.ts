@@ -168,6 +168,7 @@ export interface ServerField {
   tawSource?: 'coneat_mm' | 'coneat_apdn' | 'manual' | null;
   coneatGc?: string | null;
   initialAswMm?: number | null;
+  seasonId?: number | null;
 }
 
 export async function getFields(farmId?: number): Promise<ServerField[]> {
@@ -502,4 +503,40 @@ export async function upsertFieldOverride(
 
 export async function deleteFieldOverride(fieldId: number, date: string): Promise<void> {
   await apiFetch(`field-overrides.php?field_id=${fieldId}&date=${date}`, { method: 'DELETE' });
+}
+
+// --- Seasons ---
+
+export interface ServerSeason {
+  id: number;
+  fieldId: number;
+  cropType: string;
+  sowingDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export async function getSeasons(fieldId: number): Promise<ServerSeason[]> {
+  return apiFetch<ServerSeason[]>(`seasons.php?field_id=${fieldId}`);
+}
+
+export async function createSeason(data: {
+  field_id: number; crop_type: string; sowing_date: string;
+}): Promise<ServerSeason> {
+  return apiFetch<ServerSeason>('seasons.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateSeason(id: number, data: Record<string, unknown>): Promise<{ success: boolean }> {
+  return apiFetch(`seasons.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteSeason(id: number): Promise<{ success: boolean }> {
+  return apiFetch(`seasons.php?id=${id}`, { method: 'DELETE' });
 }
