@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { setLanguage, setAdminDefault } from './i18n';
 import { Dashboard } from './components/Dashboard';
 import { FieldForm, type FieldFormData } from './components/FieldForm';
 import { FieldDetail } from './components/FieldDetail';
@@ -19,6 +21,7 @@ import type { Field, Farm, User } from './types';
 type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm';
 
 function App() {
+  const { t, i18n } = useTranslation();
   const [authenticated, setAuthenticated] = useState(() => isLoggedIn());
   const [user, setUser] = useState<User | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -61,7 +64,10 @@ function App() {
   useEffect(() => {
     if (authenticated) {
       getStations().then(setStations).catch(() => setStations([]));
-      getMe().then(setUser).catch(() => setUser(null));
+      getMe().then((u) => {
+        setUser(u);
+        if (u.role === 'admin') setAdminDefault();
+      }).catch(() => setUser(null));
       fetchFarms();
     }
   }, [authenticated, fetchFarms]);
@@ -265,7 +271,7 @@ function App() {
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--orange)' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Add Field
+                      {t('menu.addField')}
                     </button>
                   )}
                   {currentFarm && canWrite && (
@@ -277,7 +283,7 @@ function App() {
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#1a9988' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21c-4.418 0-8-3.134-8-7 0-4.5 8-11 8-11s8 6.5 8 11c0 3.866-3.582 7-8 7z" />
                       </svg>
-                      Irrigation
+                      {t('menu.irrigation')}
                     </button>
                   )}
                   {currentFarm && canWrite && (
@@ -289,7 +295,7 @@ function App() {
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#6366f1' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                       </svg>
-                      Share Farm
+                      {t('menu.shareFarm')}
                     </button>
                   )}
                   <button
@@ -301,7 +307,18 @@ function App() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Settings
+                    {t('menu.settings')}
+                  </button>
+                  {/* Language toggle */}
+                  <button
+                    onClick={() => { setMenuOpen(false); setLanguage(i18n.language === 'es' ? 'en' : 'es'); }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                    style={{ color: 'var(--tx)' }}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--tx3)' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                    {i18n.language === 'es' ? 'English' : 'Español'}
                   </button>
                   {user?.role === 'admin' && (
                     <button
@@ -312,7 +329,7 @@ function App() {
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--tx3)' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
-                      Admin
+                      {t('menu.admin')}
                     </button>
                   )}
                 </div>
