@@ -21,6 +21,11 @@ export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps
   const [newSowDate, setNewSowDate] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Per-season sowing date editing
+  const [sowEditing, setSowEditing] = useState<number | null>(null);
+  const [sowDate, setSowDate] = useState('');
+  const [savingSow, setSavingSow] = useState(false);
+
   // Per-season harvest editing
   const [harvestEditing, setHarvestEditing] = useState<number | null>(null);
   const [harvestDate, setHarvestDate] = useState('');
@@ -47,6 +52,21 @@ export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps
       alert(err instanceof Error ? err.message : t('season.createFailed'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSowDateSave = async (seasonId: number) => {
+    if (!sowDate) return;
+    setSavingSow(true);
+    try {
+      await updateSeason(seasonId, { sowing_date: sowDate });
+      setSowEditing(null);
+      setSowDate('');
+      fetchSeasons();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update sowing date');
+    } finally {
+      setSavingSow(false);
     }
   };
 
@@ -166,7 +186,41 @@ export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps
                   </div>
 
                   <div className="text-[11px] space-y-0.5" style={{ color: 'var(--tx2)' }}>
-                    <div>{t('fieldForm.sowingDateLabel')}: {format(parseISO(s.sowingDate), 'MMM d, yyyy')}</div>
+                    {sowEditing === s.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="shrink-0">{t('fieldForm.sowingDateLabel')}:</span>
+                        <input
+                          type="date"
+                          value={sowDate}
+                          onChange={(e) => setSowDate(e.target.value)}
+                          max={s.endDate || new Date().toISOString().split('T')[0]}
+                          className="agraria-input text-[11px] flex-1"
+                        />
+                        <button
+                          onClick={() => handleSowDateSave(s.id)}
+                          disabled={!sowDate || savingSow}
+                          className="text-[10px] px-2 py-1 rounded font-medium"
+                          style={{ background: 'var(--blue)', color: '#fff' }}
+                        >
+                          {savingSow ? '...' : 'OK'}
+                        </button>
+                        <button
+                          onClick={() => { setSowEditing(null); setSowDate(''); }}
+                          className="text-[10px] px-2 py-1 rounded"
+                          style={{ color: 'var(--tx3)' }}
+                        >
+                          {t('fieldForm.cancel')}
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => { setSowEditing(s.id); setSowDate(s.sowingDate); }}
+                        className="cursor-pointer hover:underline"
+                        title={t('season.editSowingDate')}
+                      >
+                        {t('fieldForm.sowingDateLabel')}: {format(parseISO(s.sowingDate), 'MMM d, yyyy')} ✏️
+                      </div>
+                    )}
                     {s.endDate ? (
                       <div>{t('season.harvestDateLabel')}: {format(parseISO(s.endDate), 'MMM d, yyyy')}</div>
                     ) : s.isActive ? (

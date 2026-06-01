@@ -108,7 +108,8 @@
     "deleteSeasonConfirm": "Delete this season and all its data?",
     "harvestDateLabel": "Harvest Date",
     "active": "Active",
-    "ended": "Ended"
+    "ended": "Ended",
+    "editSowingDate": "Click to edit sowing date"
   },
   "menu": {
     "addField": "Add Field",

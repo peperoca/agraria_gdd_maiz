@@ -108,7 +108,8 @@
     "deleteSeasonConfirm": "¿Eliminar esta temporada y todos sus datos?",
     "harvestDateLabel": "Fecha de Cosecha",
     "active": "Activa",
-    "ended": "Finalizada"
+    "ended": "Finalizada",
+    "editSowingDate": "Clic para editar fecha de siembra"
   },
   "menu": {
     "addField": "Agregar Lote",
