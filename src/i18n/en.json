@@ -91,6 +91,14 @@
     "addField": "+ Add Field",
     "weightedAvg": "Weighted Avg"
   },
+  "season": {
+    "newSeason": "+ Season",
+    "newSeasonTitle": "New Season",
+    "autoCloseNote": "The previous active season will be automatically closed.",
+    "harvest": "Harvest",
+    "harvestFailed": "Failed to set harvest date",
+    "createFailed": "Failed to create season"
+  },
   "settings": {
     "farmSettings": "Farm Settings",
     "nameLabel": "Name",

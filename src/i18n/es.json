@@ -91,6 +91,14 @@
     "addField": "+ Agregar Lote",
     "weightedAvg": "Promedio Ponderado"
   },
+  "season": {
+    "newSeason": "+ Temporada",
+    "newSeasonTitle": "Nueva Temporada",
+    "autoCloseNote": "La temporada activa anterior se cerrará automáticamente.",
+    "harvest": "Cosecha",
+    "harvestFailed": "Error al establecer la fecha de cosecha",
+    "createFailed": "Error al crear la temporada"
+  },
   "settings": {
     "farmSettings": "Configuración de Chacra",
     "nameLabel": "Nombre",

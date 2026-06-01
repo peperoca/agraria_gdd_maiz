@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
-import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
+import { getCropConfig, getBaseCrop, CROP_DROPDOWN_OPTIONS } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons } from '../utils/api';
+import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons, createSeason, updateSeason } from '../utils/api';
 import type { FieldOverride, Season } from '../types';
 import { applyRainOverrides, applyIrrigationOverrides } from '../utils/applyOverrides';
 import { OverrideCalendar } from './OverrideCalendar';
@@ -36,6 +36,12 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
   // Season management
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(field.seasonId ?? null);
+  const [showNewSeason, setShowNewSeason] = useState(false);
+  const [newCrop, setNewCrop] = useState('corn-intermediate');
+  const [newSowDate, setNewSowDate] = useState('');
+  const [savingSeason, setSavingSeason] = useState(false);
+  const [harvestDate, setHarvestDate] = useState<string>('');
+  const [savingHarvest, setSavingHarvest] = useState(false);
 
   // Fetch seasons for this field
   useEffect(() => {
@@ -48,6 +54,45 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
       })
       .catch(() => setSeasons([]));
   }, [field.id]);
+
+  const refreshSeasons = () => {
+    getSeasons(field.id)
+      .then((ss) => {
+        setSeasons(ss);
+        const active = ss.find((s) => s.isActive);
+        if (active) setSelectedSeasonId(active.id);
+      })
+      .catch(() => setSeasons([]));
+  };
+
+  const handleCreateSeason = async () => {
+    if (!newSowDate) return;
+    setSavingSeason(true);
+    try {
+      await createSeason({ field_id: field.id, crop_type: newCrop, sowing_date: newSowDate });
+      setShowNewSeason(false);
+      setNewSowDate('');
+      refreshSeasons();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('season.createFailed'));
+    } finally {
+      setSavingSeason(false);
+    }
+  };
+
+  const handleSetHarvest = async () => {
+    if (!activeSeason || !harvestDate) return;
+    setSavingHarvest(true);
+    try {
+      await updateSeason(activeSeason.id, { end_date: harvestDate, is_active: false });
+      setHarvestDate('');
+      refreshSeasons();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('season.harvestFailed'));
+    } finally {
+      setSavingHarvest(false);
+    }
+  };
 
   // Derive active data from selected season
   const activeSeason = seasons.find((s) => s.id === selectedSeasonId) ?? null;
@@ -234,23 +279,108 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
 
   return (
     <div className="space-y-3">
-      {/* Season selector */}
-      {seasons.length > 1 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {seasons.map((s) => (
+      {/* Season selector + actions */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {seasons.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSelectedSeasonId(s.id)}
+            className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors"
+            style={{
+              background: s.id === selectedSeasonId ? 'var(--blue)' : 'var(--surface2)',
+              color: s.id === selectedSeasonId ? '#fff' : 'var(--tx2)',
+              border: s.isActive ? '1.5px solid var(--blue)' : '1px solid var(--bdr)',
+            }}
+          >
+            {getCropConfig(s.cropType).label} — {format(parseISO(s.sowingDate), 'MMM yyyy')}
+            {s.endDate && <span className="ml-1 opacity-60">→ {format(parseISO(s.endDate), 'MMM')}</span>}
+          </button>
+        ))}
+        <button
+          onClick={() => setShowNewSeason(!showNewSeason)}
+          className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-medium"
+          style={{ background: 'var(--surface2)', color: 'var(--orange)', border: '1px solid var(--bdr)' }}
+        >
+          {t('season.newSeason')}
+        </button>
+      </div>
+
+      {/* New Season form */}
+      {showNewSeason && (
+        <div className="agraria-card">
+          <div className="sec-label">{t('season.newSeasonTitle')}</div>
+          <div className="space-y-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.cropLabel')}</label>
+              <select
+                value={newCrop}
+                onChange={(e) => setNewCrop(e.target.value)}
+                className="agraria-input"
+              >
+                {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
+                  <optgroup key={group} label={group}>
+                    {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.sowingDateLabel')}</label>
+              <input
+                type="date"
+                value={newSowDate}
+                onChange={(e) => setNewSowDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="agraria-input"
+              />
+            </div>
+            <p className="text-[10px]" style={{ color: 'var(--tx3)' }}>
+              {t('season.autoCloseNote')}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowNewSeason(false)}
+                className="flex-1 py-1.5 rounded-[var(--r)] text-xs font-medium"
+                style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
+              >
+                {t('fieldForm.cancel')}
+              </button>
+              <button
+                onClick={handleCreateSeason}
+                disabled={!newSowDate || savingSeason}
+                className="agraria-btn-primary flex-1 text-xs"
+              >
+                {savingSeason ? t('settings.saving') : 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Harvest date — only for active season without end_date */}
+      {activeSeason?.isActive && !activeSeason.endDate && (
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={harvestDate}
+            onChange={(e) => setHarvestDate(e.target.value)}
+            placeholder="Harvest date"
+            max={new Date().toISOString().split('T')[0]}
+            min={effectiveSowingDate}
+            className="agraria-input text-xs flex-1"
+          />
+          {harvestDate && (
             <button
-              key={s.id}
-              onClick={() => setSelectedSeasonId(s.id)}
-              className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors"
-              style={{
-                background: s.id === selectedSeasonId ? 'var(--blue)' : 'var(--surface2)',
-                color: s.id === selectedSeasonId ? '#fff' : 'var(--tx2)',
-                border: s.isActive ? '1.5px solid var(--blue)' : '1px solid var(--bdr)',
-              }}
+              onClick={handleSetHarvest}
+              disabled={savingHarvest}
+              className="text-[11px] px-3 py-1.5 rounded-[var(--r)] font-medium shrink-0"
+              style={{ background: 'var(--surface2)', color: 'var(--tx)', border: '1px solid var(--bdr)' }}
             >
-              {getCropConfig(s.cropType).label} — {format(parseISO(s.sowingDate), 'MMM yyyy')}
+              {savingHarvest ? '...' : `🌾 ${t('season.harvest')}`}
             </button>
-          ))}
+          )}
         </div>
       )}
 
