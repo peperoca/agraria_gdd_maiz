@@ -256,8 +256,9 @@ export interface NdviReadingRaw {
   cloud_pct: number | null;
 }
 
-export async function getNdviData(fieldId: number): Promise<NdviReadingRaw[]> {
-  return apiFetch<NdviReadingRaw[]>(`ndvi.php?field_id=${fieldId}`);
+export async function getNdviData(fieldId: number, from?: string): Promise<NdviReadingRaw[]> {
+  const params = `field_id=${fieldId}${from ? `&from=${from}` : ''}`;
+  return apiFetch<NdviReadingRaw[]>(`ndvi.php?${params}`);
 }
 
 // --- Soil Moisture ---
@@ -273,8 +274,9 @@ export interface SoilMoistureReadingRaw {
   vv_wet: number | null;
 }
 
-export async function getSoilMoistureData(fieldId: number): Promise<SoilMoistureReadingRaw[]> {
-  return apiFetch<SoilMoistureReadingRaw[]>(`soil-moisture.php?field_id=${fieldId}`);
+export async function getSoilMoistureData(fieldId: number, from?: string): Promise<SoilMoistureReadingRaw[]> {
+  const params = `field_id=${fieldId}${from ? `&from=${from}` : ''}`;
+  return apiFetch<SoilMoistureReadingRaw[]>(`soil-moisture.php?${params}`);
 }
 
 // --- Irrigation ---

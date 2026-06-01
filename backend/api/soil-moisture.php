@@ -19,13 +19,16 @@ $stmt = $db->prepare("SELECT id FROM fields WHERE id = ? AND user_id = ?");
 $stmt->execute([$fieldId, $user['id']]);
 if (!$stmt->fetch()) json_error('Field not found', 404);
 
-$stmt = $db->prepare("
-    SELECT date, vv_db, vh_db, vv_raw_db, ndvi_used, sm_relative, vv_dry, vv_wet
-    FROM soil_moisture_readings
-    WHERE field_id = ?
-    ORDER BY date ASC
-");
-$stmt->execute([$fieldId]);
+$from = isset($_GET['from']) ? $_GET['from'] : null;
+$sql = "SELECT date, vv_db, vh_db, vv_raw_db, ndvi_used, sm_relative, vv_dry, vv_wet FROM soil_moisture_readings WHERE field_id = ?";
+$params = [$fieldId];
+if ($from && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+    $sql .= " AND date >= ?";
+    $params[] = $from;
+}
+$sql .= " ORDER BY date ASC";
+$stmt = $db->prepare($sql);
+$stmt->execute($params);
 $readings = $stmt->fetchAll();
 
 foreach ($readings as &$r) {

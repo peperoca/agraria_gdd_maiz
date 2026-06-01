@@ -30,6 +30,7 @@ interface FieldFormProps {
   farmLng?: number | null;
   onSubmit: (data: FieldFormData) => void;
   onCancel: () => void;
+  onDelete?: () => void;
 }
 
 interface ConeatMatch {
@@ -40,7 +41,7 @@ interface ConeatMatch {
   overlapPct: number;
 }
 
-export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: FieldFormProps) {
+export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel, onDelete }: FieldFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(field?.name ?? '');
   const [sowingDate, setSowingDate] = useState(field?.sowingDate ?? '');
@@ -60,9 +61,11 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
   const [coneatLoading, setConeatLoading] = useState(false);
   const [coneatError, setConeatError] = useState<string | null>(null);
 
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+
   const cropConfig = getCropConfig(cropType);
   const isEditing = !!field;
-  const isValid = name.trim().length > 0 && sowingDate.length > 0;
+  const isValid = isEditing ? name.trim().length > 0 : (name.trim().length > 0 && sowingDate.length > 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,33 +191,46 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.cropLabel')}</label>
-          <select
-            value={cropType}
-            onChange={(e) => setCropType(e.target.value as CropType)}
-            className="agraria-input"
-          >
-            {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
-              <optgroup key={group} label={t(`crops.${group.toLowerCase()}`)}>
-                {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+        {!isEditing && (
+          <>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.cropLabel')}</label>
+              <select
+                value={cropType}
+                onChange={(e) => setCropType(e.target.value as CropType)}
+                className="agraria-input"
+              >
+                {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
+                  <optgroup key={group} label={t(`crops.${group.toLowerCase()}`)}>
+                    {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </optgroup>
                 ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
+              </select>
+            </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.sowingDateLabel')}</label>
-          <input
-            type="date"
-            value={sowingDate}
-            onChange={(e) => setSowingDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="agraria-input"
-          />
-        </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.sowingDateLabel')}</label>
+              <input
+                type="date"
+                value={sowingDate}
+                onChange={(e) => setSowingDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="agraria-input"
+              />
+            </div>
+          </>
+        )}
+
+        {isEditing && field?.createdAt && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.creationDate')}</label>
+            <div className="text-xs py-2 px-3 rounded-[var(--r)]" style={{ background: 'var(--surface2)', color: 'var(--tx)' }}>
+              {new Date(field.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+        )}
 
         {/* Polygon map */}
         <PolygonMap
@@ -226,6 +242,14 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
         {polygon && (
           <div className="text-[10px]" style={{ color: 'var(--tx3)' }}>
             {t('fieldForm.polygonDrawn', { count: polygon.coordinates[0].length - 1 })}
+            {(() => {
+              try {
+                const feat = turfPolygon(polygon.coordinates);
+                const areaM2 = area(feat);
+                const ha = areaM2 / 10000;
+                return ` · ${ha.toFixed(1)} ha (${(ha * 2.471).toFixed(1)} ac)`;
+              } catch { return ''; }
+            })()}
           </div>
         )}
 
@@ -401,16 +425,56 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel }: Field
             className="flex-1 py-2.5 px-4 rounded-[var(--r)] text-sm font-medium cursor-pointer border-none"
             style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
           >
-            Cancel
+            {t('fieldForm.cancel')}
           </button>
           <button
             type="submit"
             disabled={!isValid}
             className="agraria-btn-primary flex-1"
           >
-            {isEditing ? 'Save Changes' : '+ Add Field'}
+            {isEditing ? t('fieldForm.saveChanges') : t('fieldForm.addField')}
           </button>
         </div>
+
+        {/* Delete field button — only when editing */}
+        {isEditing && onDelete && (
+          <div className="pt-3 mt-3" style={{ borderTop: '1px solid var(--bdr)' }}>
+            {!showDeleteWarning ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteWarning(true)}
+                className="w-full py-2 rounded-[var(--r)] text-xs font-medium"
+                style={{ background: '#dc2626', color: '#fff' }}
+              >
+                {t('fieldForm.deleteField')}
+              </button>
+            ) : (
+              <div className="p-3 rounded-[var(--r)]" style={{ background: 'var(--surface2)', border: '1px solid #dc2626' }}>
+                <p className="text-xs mb-3" style={{ color: 'var(--tx)' }}>
+                  {t('fieldForm.deleteWarning')}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteWarning(false)}
+                    className="flex-1 py-1.5 rounded-[var(--r)] text-xs font-medium"
+                    style={{ background: 'var(--surface)', color: 'var(--tx2)', border: '1px solid var(--bdr)' }}
+                  >
+                    {t('fieldForm.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="flex-1 py-1.5 rounded-[var(--r)] text-xs font-medium"
+                    style={{ background: '#dc2626', color: '#fff' }}
+                  >
+                    {t('fieldForm.deleteField')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );

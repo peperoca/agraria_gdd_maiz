@@ -89,6 +89,9 @@
     "cancel": "Cancel",
     "saveChanges": "Save Changes",
     "addField": "+ Add Field",
+    "creationDate": "Creation Date",
+    "deleteField": "Delete Field",
+    "deleteWarning": "Deleting this field will permanently remove all seasons and associated data.",
     "weightedAvg": "Weighted Avg"
   },
   "season": {
@@ -97,7 +100,26 @@
     "autoCloseNote": "The previous active season will be automatically closed.",
     "harvest": "Harvest",
     "harvestFailed": "Failed to set harvest date",
-    "createFailed": "Failed to create season"
+    "createFailed": "Failed to create season",
+    "manageTitle": "Crop Seasons",
+    "addSeason": "Add Season",
+    "seasonHistory": "Season History",
+    "deleteSeason": "Delete Season",
+    "deleteSeasonConfirm": "Delete this season and all its data?",
+    "harvestDateLabel": "Harvest Date",
+    "active": "Active",
+    "ended": "Ended"
+  },
+  "menu": {
+    "addField": "Add Field",
+    "settings": "Settings",
+    "admin": "Admin",
+    "irrigation": "Irrigation",
+    "shareFarm": "Share Farm",
+    "editField": "Edit Field",
+    "editCrop": "Edit Crop",
+    "fieldSettings": "Field Settings",
+    "language": "Language"
   },
   "settings": {
     "farmSettings": "Farm Settings",
@@ -405,14 +427,6 @@
     "myFarms": "My Farms",
     "sharedWithMe": "Shared with me",
     "allFarmsAdmin": "All Farms (Admin)"
-  },
-  "menu": {
-    "addField": "Add Field",
-    "irrigation": "Irrigation",
-    "shareFarm": "Share Farm",
-    "settings": "Settings",
-    "admin": "Admin",
-    "language": "Language"
   },
   "crops": {
     "corn": "Corn",

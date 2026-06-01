@@ -12,13 +12,14 @@ import { FarmSwitcher } from './components/FarmSwitcher';
 import { NdviImageView } from './components/NdviImageView';
 import { IrrigationPanel } from './components/IrrigationPanel';
 import { ShareManager } from './components/ShareManager';
+import { SeasonManager } from './components/SeasonManager';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, getFields as apiGetFields, updateField as apiUpdateField, type StationInfo } from './utils/api';
 import type { Field, Farm, User } from './types';
 // CropType now used via FieldFormData
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm' | 'edit-crop';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -35,6 +36,8 @@ function App() {
   const [ndviDataForImage, setNdviDataForImage] = useState<import('./types').NdviReading[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [gearOpen, setGearOpen] = useState(false);
+  const gearRef = useRef<HTMLDivElement>(null);
 
   const fetchFarms = useCallback(async () => {
     try {
@@ -59,6 +62,18 @@ function App() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [menuOpen]);
+
+  // Close gear dropdown on outside click
+  useEffect(() => {
+    if (!gearOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (gearRef.current && !gearRef.current.contains(e.target as Node)) {
+        setGearOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [gearOpen]);
 
   // Fetch stations, user info, and farms when authenticated
   useEffect(() => {
@@ -189,6 +204,7 @@ function App() {
               if (view === 'ndvi-image') setView('field-detail');
               else if (view === 'field-detail') setView('dashboard');
               else if (view === 'edit-field') setView('field-detail');
+              else if (view === 'edit-crop') setView('field-detail');
               else if (view === 'admin') setView('dashboard');
               else if (view === 'add-farm') setView('dashboard');
               else if (view === 'irrigation') setView('dashboard');
@@ -337,30 +353,45 @@ function App() {
             </div>
           )}
           {view === 'field-detail' && selectedField && canWrite && (
-            <>
+            <div className="relative" ref={gearRef}>
               <button
-                onClick={() => setView('edit-field')}
+                onClick={() => setGearOpen((p) => !p)}
                 className="text-white/80 hover:text-white p-1.5"
-                title="Edit Field"
+                title={t('menu.fieldSettings')}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
-              <button
-                onClick={() => {
-                  if (confirm(`Delete "${selectedField.name}"?`)) {
-                    handleDeleteField(selectedField.id);
-                  }
-                }}
-                className="text-white/80 hover:text-white p-1.5"
-                title="Delete Field"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </>
+              {gearOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg py-1 z-50 min-w-[150px]"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--bdr2)' }}
+                >
+                  <button
+                    onClick={() => { setGearOpen(false); setView('edit-field'); }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                    style={{ color: 'var(--tx)' }}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    {t('menu.editField')}
+                  </button>
+                  <button
+                    onClick={() => { setGearOpen(false); setView('edit-crop'); }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                    style={{ color: 'var(--tx)' }}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                    {t('menu.editCrop')}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Logout */}
@@ -446,8 +477,16 @@ function App() {
             field={selectedField}
             onSubmit={handleEditField}
             onCancel={() => setView('field-detail')}
+            onDelete={() => handleDeleteField(selectedField.id)}
             farmLat={currentFarm?.latitude}
             farmLng={currentFarm?.longitude}
+          />
+        )}
+        {view === 'edit-crop' && selectedField && (
+          <SeasonManager
+            fieldId={selectedField.id}
+            fieldName={selectedField.name}
+            onBack={() => { refresh(); setView('field-detail'); }}
           />
         )}
         {view === 'field-detail' && selectedField && (

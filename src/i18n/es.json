@@ -89,6 +89,9 @@
     "cancel": "Cancelar",
     "saveChanges": "Guardar Cambios",
     "addField": "+ Agregar Lote",
+    "creationDate": "Fecha de Creación",
+    "deleteField": "Eliminar Lote",
+    "deleteWarning": "Eliminar este lote eliminará permanentemente todas las temporadas y datos asociados.",
     "weightedAvg": "Promedio Ponderado"
   },
   "season": {
@@ -97,7 +100,26 @@
     "autoCloseNote": "La temporada activa anterior se cerrará automáticamente.",
     "harvest": "Cosecha",
     "harvestFailed": "Error al establecer la fecha de cosecha",
-    "createFailed": "Error al crear la temporada"
+    "createFailed": "Error al crear la temporada",
+    "manageTitle": "Temporadas de Cultivo",
+    "addSeason": "Agregar Temporada",
+    "seasonHistory": "Historial de Temporadas",
+    "deleteSeason": "Eliminar Temporada",
+    "deleteSeasonConfirm": "¿Eliminar esta temporada y todos sus datos?",
+    "harvestDateLabel": "Fecha de Cosecha",
+    "active": "Activa",
+    "ended": "Finalizada"
+  },
+  "menu": {
+    "addField": "Agregar Lote",
+    "settings": "Configuración",
+    "admin": "Admin",
+    "irrigation": "Riego",
+    "shareFarm": "Compartir Chacra",
+    "editField": "Editar Lote",
+    "editCrop": "Editar Cultivo",
+    "fieldSettings": "Config. del Lote",
+    "language": "Idioma"
   },
   "settings": {
     "farmSettings": "Configuración de Chacra",
@@ -405,14 +427,6 @@
     "myFarms": "Mis Chacras",
     "sharedWithMe": "Compartidas conmigo",
     "allFarmsAdmin": "Todas las Chacras (Admin)"
-  },
-  "menu": {
-    "addField": "Agregar Lote",
-    "irrigation": "Riego",
-    "shareFarm": "Compartir Chacra",
-    "settings": "Configuración",
-    "admin": "Admin",
-    "language": "Idioma"
   },
   "crops": {
     "corn": "Maíz",
