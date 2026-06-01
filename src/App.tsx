@@ -13,13 +13,14 @@ import { NdviImageView } from './components/NdviImageView';
 import { IrrigationPanel } from './components/IrrigationPanel';
 import { ShareManager } from './components/ShareManager';
 import { SeasonManager } from './components/SeasonManager';
+import { FarmMapView } from './components/FarmMapView';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, getFields as apiGetFields, updateField as apiUpdateField, type StationInfo } from './utils/api';
 import type { Field, Farm, User } from './types';
 // CropType now used via FieldFormData
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm' | 'edit-crop';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm' | 'edit-crop' | 'farm-map';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -209,6 +210,7 @@ function App() {
               else if (view === 'add-farm') setView('dashboard');
               else if (view === 'irrigation') setView('dashboard');
               else if (view === 'share-farm') setView('dashboard');
+              else if (view === 'farm-map') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
@@ -240,6 +242,7 @@ function App() {
                   setView('dashboard');
                 }}
                 onAddFarm={() => setView('add-farm')}
+                onViewMap={() => setView('farm-map')}
               />
             </div>
           </div>
@@ -416,6 +419,18 @@ function App() {
         )}
         {view === 'share-farm' && currentFarm && (
           <ShareManager entityType="farm" entityId={currentFarm.id} entityName={currentFarm.name} />
+        )}
+        {view === 'farm-map' && (
+          <FarmMapView
+            farms={farms}
+            currentFarmId={currentFarmId}
+            onSelectFarm={(id) => {
+              setCurrentFarmId(id);
+              setSelectedFieldId(null);
+              setView('dashboard');
+            }}
+            onBack={() => setView('dashboard')}
+          />
         )}
         {view === 'admin' && <AdminPanel />}
         {view === 'add-farm' && (

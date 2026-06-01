@@ -6,9 +6,10 @@ interface FarmSwitcherProps {
   currentFarmId: number | null;
   onFarmChange: (farmId: number) => void;
   onAddFarm: () => void;
+  onViewMap?: () => void;
 }
 
-export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: FarmSwitcherProps) {
+export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm, onViewMap }: FarmSwitcherProps) {
   const { t } = useTranslation();
 
   if (farms.length === 0) {
@@ -33,7 +34,9 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
       value={currentFarmId ?? ''}
       onChange={(e) => {
         const val = e.target.value;
-        if (val === '__add__') {
+        if (val === '__map__') {
+          onViewMap?.();
+        } else if (val === '__add__') {
           onAddFarm();
         } else {
           onFarmChange(Number(val));
@@ -83,6 +86,7 @@ export function FarmSwitcher({ farms, currentFarmId, onFarmChange, onAddFarm }: 
           </option>
         ))
       )}
+      {onViewMap && <option value="__map__" style={{ color: '#000' }}>🗺 {t('farmSwitcher.viewMap')}</option>}
       <option value="__add__" style={{ color: '#000' }}>{t('farmSwitcher.addFarm')}</option>
     </select>
   );

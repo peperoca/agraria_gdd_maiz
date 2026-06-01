@@ -427,7 +427,13 @@
     "addFarm": "+ Add Farm...",
     "myFarms": "My Farms",
     "sharedWithMe": "Shared with me",
-    "allFarmsAdmin": "All Farms (Admin)"
+    "allFarmsAdmin": "All Farms (Admin)",
+    "viewMap": "Map"
+  },
+  "farmMap": {
+    "title": "Farm Map",
+    "noCoords": "No farms have coordinates set. Edit a farm to add a map pin.",
+    "tapPin": "Tap a pin to switch to that farm."
   },
   "crops": {
     "corn": "Corn",

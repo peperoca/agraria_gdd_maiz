@@ -427,7 +427,13 @@
     "addFarm": "+ Agregar Chacra...",
     "myFarms": "Mis Chacras",
     "sharedWithMe": "Compartidas conmigo",
-    "allFarmsAdmin": "Todas las Chacras (Admin)"
+    "allFarmsAdmin": "Todas las Chacras (Admin)",
+    "viewMap": "Mapa"
+  },
+  "farmMap": {
+    "title": "Mapa de Chacras",
+    "noCoords": "Ninguna chacra tiene coordenadas. Editá una chacra para agregar un pin en el mapa.",
+    "tapPin": "Tocá un pin para ir a esa chacra."
   },
   "crops": {
     "corn": "Maíz",
