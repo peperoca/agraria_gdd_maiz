@@ -55,9 +55,9 @@ export function FarmMapView({ farms, currentFarmId, onSelectFarm, onBack }: Farm
 
       const marker = L.marker([farm.latitude!, farm.longitude!], { icon }).addTo(map);
 
-      // Tooltip with farm name
+      // Permanent label with farm name
       marker.bindTooltip(farm.name, {
-        permanent: false,
+        permanent: true,
         direction: 'top',
         offset: [0, -size / 2 - 2],
         className: 'farm-map-tooltip',

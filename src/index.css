@@ -253,3 +253,18 @@ body {
 .status-warning { background: var(--wb); color: var(--wt); }
 .status-danger  { background: var(--db); color: var(--dt); }
 .status-info    { background: var(--ib); color: var(--it); }
+
+/* Farm map tooltips */
+.farm-map-tooltip {
+  background: rgba(0,0,0,0.75) !important;
+  color: #fff !important;
+  border: none !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
+.farm-map-tooltip::before {
+  border-top-color: rgba(0,0,0,0.75) !important;
+}
