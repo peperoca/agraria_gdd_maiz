@@ -28,9 +28,10 @@ interface FieldDetailProps {
   field: Field;
   farmLatitude?: number | null;
   onNdviDateClick?: (date: string, ndviData: NdviReading[]) => void;
+  onAswUpdate?: (aswMm: number | null) => void;
 }
 
-export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetailProps) {
+export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate }: FieldDetailProps) {
   const { t } = useTranslation();
 
   // Season management
@@ -236,9 +237,18 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick }: FieldDetai
     return computeWaterBalance(tEtc, tRain, tIrrig, {
       tawMm: field.tawMm,
       madFraction,
-      initialAswMm: field.initialAswMm ?? undefined,
+      initialAswMm: activeSeason?.initialAswMm ?? field.initialAswMm ?? undefined,
     });
-  }, [field.tawMm, field.madPct, field.initialAswMm, tEtc, tRain, tIrrig, cropConfig.madDefault]);
+  }, [field.tawMm, field.madPct, field.initialAswMm, activeSeason?.initialAswMm, tEtc, tRain, tIrrig, cropConfig.madDefault]);
+
+  // Report last ASW to parent for season rollover
+  useEffect(() => {
+    if (!aswData || aswData.length === 0) {
+      onAswUpdate?.(null);
+    } else {
+      onAswUpdate?.(aswData[aswData.length - 1].asw);
+    }
+  }, [aswData, onAswUpdate]);
 
   // Soybean: photoperiod
   const photoAlert = baseCrop === 'soybean' && farmLatitude && cropConfig.criticalPhotoperiod

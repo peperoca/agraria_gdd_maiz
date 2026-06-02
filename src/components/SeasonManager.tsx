@@ -8,10 +8,11 @@ import type { Season } from '../types';
 interface SeasonManagerProps {
   fieldId: number;
   fieldName: string;
+  lastAswMm?: number | null;
   onBack: () => void;
 }
 
-export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps) {
+export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonManagerProps) {
   const { t } = useTranslation();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,12 @@ export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps
     if (!newSowDate) return;
     setSaving(true);
     try {
-      await createSeason({ field_id: fieldId, crop_type: newCrop, sowing_date: newSowDate });
+      await createSeason({
+        field_id: fieldId,
+        crop_type: newCrop,
+        sowing_date: newSowDate,
+        initial_asw_mm: lastAswMm ?? undefined,
+      });
       setNewSowDate('');
       fetchSeasons();
     } catch (err) {
@@ -132,6 +138,11 @@ export function SeasonManager({ fieldId, fieldName, onBack }: SeasonManagerProps
           <p className="text-[9px]" style={{ color: 'var(--tx3)' }}>
             {t('season.autoCloseNote')}
           </p>
+          {lastAswMm != null && (
+            <p className="text-[9px]" style={{ color: 'var(--blue)' }}>
+              💧 {t('season.aswRollover', { value: Math.round(lastAswMm) })}
+            </p>
+          )}
           <button
             onClick={handleCreate}
             disabled={!newSowDate || saving}

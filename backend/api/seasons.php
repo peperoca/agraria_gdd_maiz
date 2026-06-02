@@ -24,7 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $db->prepare("
         SELECT id, field_id AS fieldId, crop_type AS cropType,
                sowing_date AS sowingDate, end_date AS endDate,
-               is_active AS isActive, created_at AS createdAt
+               is_active AS isActive, initial_asw_mm AS initialAswMm,
+               created_at AS createdAt
         FROM seasons
         WHERE field_id = ?
         ORDER BY sowing_date DESC
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $r['id'] = (int) $r['id'];
         $r['fieldId'] = (int) $r['fieldId'];
         $r['isActive'] = (bool) $r['isActive'];
+        $r['initialAswMm'] = $r['initialAswMm'] !== null ? (float) $r['initialAswMm'] : null;
     }
 
     json_response($rows);
@@ -74,12 +76,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ");
     $stmt->execute([$prevEndDate, $fieldId]);
 
+    // Accept optional initial ASW (rolled over from previous season)
+    $initialAswMm = isset($body['initial_asw_mm']) ? (float) $body['initial_asw_mm'] : null;
+
     // Create new season
     $stmt = $db->prepare("
-        INSERT INTO seasons (field_id, crop_type, sowing_date, is_active)
-        VALUES (?, ?, ?, 1)
+        INSERT INTO seasons (field_id, crop_type, sowing_date, is_active, initial_asw_mm)
+        VALUES (?, ?, ?, 1, ?)
     ");
-    $stmt->execute([$fieldId, $cropType, $sowingDate]);
+    $stmt->execute([$fieldId, $cropType, $sowingDate, $initialAswMm]);
     $seasonId = (int) $db->lastInsertId();
 
     // Also update legacy fields columns for backward compat
@@ -93,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'sowingDate' => $sowingDate,
         'endDate' => null,
         'isActive' => true,
+        'initialAswMm' => $initialAswMm,
         'createdAt' => date('Y-m-d H:i:s'),
     ], 201);
 }
@@ -131,6 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     if (isset($body['is_active'])) {
         $sets[] = 'is_active = ?';
         $params[] = $body['is_active'] ? 1 : 0;
+    }
+    if (array_key_exists('initial_asw_mm', $body)) {
+        $sets[] = 'initial_asw_mm = ?';
+        $params[] = $body['initial_asw_mm'] !== null ? (float) $body['initial_asw_mm'] : null;
     }
 
     if (empty($sets)) json_error('No fields to update');

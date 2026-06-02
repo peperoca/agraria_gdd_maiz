@@ -516,6 +516,7 @@ export interface ServerSeason {
   sowingDate: string;
   endDate: string | null;
   isActive: boolean;
+  initialAswMm: number | null;
   createdAt: string;
 }
 
@@ -524,7 +525,7 @@ export async function getSeasons(fieldId: number): Promise<ServerSeason[]> {
 }
 
 export async function createSeason(data: {
-  field_id: number; crop_type: string; sowing_date: string;
+  field_id: number; crop_type: string; sowing_date: string; initial_asw_mm?: number | null;
 }): Promise<ServerSeason> {
   return apiFetch<ServerSeason>('seasons.php', {
     method: 'POST',

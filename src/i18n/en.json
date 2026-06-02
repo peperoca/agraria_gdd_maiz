@@ -109,7 +109,8 @@
     "harvestDateLabel": "Harvest Date",
     "active": "Active",
     "ended": "Ended",
-    "editSowingDate": "Click to edit sowing date"
+    "editSowingDate": "Click to edit sowing date",
+    "aswRollover": "Soil water carried over: {{value}} mm"
   },
   "menu": {
     "addField": "Add Field",

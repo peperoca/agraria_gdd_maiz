@@ -109,7 +109,8 @@
     "harvestDateLabel": "Fecha de Cosecha",
     "active": "Activa",
     "ended": "Finalizada",
-    "editSowingDate": "Clic para editar fecha de siembra"
+    "editSowingDate": "Clic para editar fecha de siembra",
+    "aswRollover": "Agua en suelo heredada: {{value}} mm"
   },
   "menu": {
     "addField": "Agregar Lote",

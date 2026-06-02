@@ -30,6 +30,7 @@ export interface Season {
   sowingDate: string;
   endDate: string | null;
   isActive: boolean;
+  initialAswMm: number | null;
   createdAt: string;
 }
 

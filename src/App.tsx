@@ -35,6 +35,7 @@ function App() {
   const [stations, setStations] = useState<StationInfo[]>([]);
   const [ndviImageDate, setNdviImageDate] = useState<string | undefined>(undefined);
   const [ndviDataForImage, setNdviDataForImage] = useState<import('./types').NdviReading[]>([]);
+  const [lastAswMm, setLastAswMm] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [gearOpen, setGearOpen] = useState(false);
@@ -502,6 +503,7 @@ function App() {
           <SeasonManager
             fieldId={selectedField.id}
             fieldName={selectedField.name}
+            lastAswMm={lastAswMm}
             onBack={() => { refresh(); setView('field-detail'); }}
           />
         )}
@@ -514,6 +516,7 @@ function App() {
               setNdviDataForImage(ndviData);
               setView('ndvi-image');
             }}
+            onAswUpdate={setLastAswMm}
           />
         )}
         {view === 'ndvi-image' && selectedField && ndviDataForImage.length > 0 && (
