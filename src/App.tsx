@@ -423,6 +423,7 @@ function App() {
         {view === 'farm-map' && (
           <FarmMapView
             farms={farms}
+            stations={stations}
             currentFarmId={currentFarmId}
             onSelectFarm={(id) => {
               setCurrentFarmId(id);

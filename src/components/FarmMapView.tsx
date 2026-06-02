@@ -2,16 +2,17 @@ import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { Farm } from '../types';
+import type { Farm, StationInfo } from '../types';
 
 interface FarmMapViewProps {
   farms: Farm[];
+  stations: StationInfo[];
   currentFarmId: number | null;
   onSelectFarm: (id: number) => void;
   onBack: () => void;
 }
 
-export function FarmMapView({ farms, currentFarmId, onSelectFarm, onBack }: FarmMapViewProps) {
+export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBack }: FarmMapViewProps) {
   const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -68,14 +69,36 @@ export function FarmMapView({ farms, currentFarmId, onSelectFarm, onBack }: Farm
       });
     });
 
-    // Fit bounds to show all farms
-    if (farmsWithCoords.length > 1) {
-      const bounds = L.latLngBounds(
-        farmsWithCoords.map((f) => [f.latitude!, f.longitude!] as L.LatLngTuple)
-      );
+    // Add markers for each weather station
+    stations.forEach((station) => {
+      const stationIcon = L.divIcon({
+        html: '<div style="font-size:18px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">🌡️</div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        className: '',
+      });
+
+      const stationMarker = L.marker([station.latitude, station.longitude], { icon: stationIcon, interactive: false }).addTo(map);
+
+      stationMarker.bindTooltip(station.name, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -14],
+        className: 'farm-map-tooltip station-tooltip',
+      });
+    });
+
+    // Fit bounds to show all farms and stations
+    const allPoints: L.LatLngTuple[] = [
+      ...farmsWithCoords.map((f) => [f.latitude!, f.longitude!] as L.LatLngTuple),
+      ...stations.map((s) => [s.latitude, s.longitude] as L.LatLngTuple),
+    ];
+
+    if (allPoints.length > 1) {
+      const bounds = L.latLngBounds(allPoints);
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    } else if (farmsWithCoords.length === 1) {
-      map.setView([farmsWithCoords[0].latitude!, farmsWithCoords[0].longitude!], 12);
+    } else if (allPoints.length === 1) {
+      map.setView(allPoints[0], 12);
     }
     // else: keep default Uruguay center
 
