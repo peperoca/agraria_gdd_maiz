@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc } from '../types';
-import { getCropConfig } from './cropConfig';
+import type { TFunction } from 'i18next';
+import { getCropConfig, getBaseCrop, getTranslatedStage } from './cropConfig';
 
 /**
  * Export field report as PDF.
@@ -14,6 +15,7 @@ export async function exportFieldPdf(
   rainData: DailyRain[],
   ndviData: NdviReading[] = [],
   _etcData: DailyETc[] = [],
+  t?: TFunction,
 ): Promise<void> {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = 210;
@@ -78,7 +80,8 @@ export async function exportFieldPdf(
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 30, 30);
-  pdf.text('Growth Stages', margin, y);
+  const baseCrop = getBaseCrop((field.cropType ?? 'corn') as import('./cropConfig').CropType);
+  pdf.text(t ? t('growthStages.title') : 'Growth Stages', margin, y);
   y += 6;
 
   // Find stage dates
@@ -114,7 +117,8 @@ export async function exportFieldPdf(
     const dateReached = stageDates.get(stage.shortName);
     pdf.text(isPast ? 'OK' : '  ', colX[0], y);
     pdf.text(stage.shortName, colX[1], y);
-    pdf.text(stage.name, colX[2], y);
+    const stageName = t ? getTranslatedStage(t, baseCrop, stage).name : stage.name;
+    pdf.text(stageName, colX[2], y);
     pdf.text(String(stage.gdd), colX[3], y);
     pdf.text(dateReached ?? '—', colX[4], y);
     y += 4;

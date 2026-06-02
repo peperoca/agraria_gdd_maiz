@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { CornStage } from '../types';
 
 // ── Base crop species ──
@@ -456,3 +457,15 @@ export const CROP_DROPDOWN_OPTIONS: CropDropdownOption[] = [
   { value: 'rapeseed-intermediate', label: 'Intermediate (~1700 GDD)', group: 'Rapeseed' },
   { value: 'rapeseed-long', label: 'Long / Winter (~2100 GDD)', group: 'Rapeseed' },
 ];
+
+/** Translate a stage's name and description via i18n, falling back to the English hardcoded values */
+export function getTranslatedStage(
+  t: TFunction,
+  baseCrop: string,
+  stage: CornStage,
+): { name: string; description: string } {
+  return {
+    name: t(`stages.${baseCrop}.${stage.shortName}.name`, { defaultValue: stage.name }),
+    description: t(`stages.${baseCrop}.${stage.shortName}.desc`, { defaultValue: stage.description }),
+  };
+}

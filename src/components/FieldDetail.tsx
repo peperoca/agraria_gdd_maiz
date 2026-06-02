@@ -389,7 +389,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
           <button
             onClick={() => exportFieldPdf(
               field, tGdd, tEto ?? [], tRain ?? [],
-              ndviData ?? [], tEtc ?? [],
+              ndviData ?? [], tEtc ?? [], t,
             )}
             className="flex-1 py-2 px-3 rounded-[var(--r)] text-xs font-medium border"
             style={{ borderColor: 'var(--bdr2)', color: 'var(--tx2)', background: 'var(--surface)' }}

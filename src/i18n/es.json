@@ -436,6 +436,68 @@
     "noCoords": "Ninguna chacra tiene coordenadas. Editá una chacra para agregar un pin en el mapa.",
     "tapPin": "Tocá un pin para ir a esa chacra."
   },
+  "stages": {
+    "corn": {
+      "VE": { "name": "Emergencia", "desc": "El brote emerge del suelo; comienza la fotosíntesis" },
+      "V1": { "name": "Primera Hoja", "desc": "Primer collar de hoja visible; raíces nodales emergiendo" },
+      "V2": { "name": "Segunda Hoja", "desc": "La planta depende de la energía de la semilla; raíces seminales al máximo" },
+      "V3": { "name": "Tercera Hoja", "desc": "La semilla ya no contribuye; planta dependiente de fotosíntesis" },
+      "V4": { "name": "Cuarta Hoja", "desc": "Comienza período crítico de control de malezas" },
+      "V6": { "name": "Sexta Hoja", "desc": "Punto de crecimiento sobre el suelo; sistema radicular nodal dominante" },
+      "V8": { "name": "Octava Hoja", "desc": "Fase de crecimiento rápido; brotes de espiga visibles" },
+      "V9": { "name": "Novena Hoja", "desc": "Se fija el número de hileras de granos; raíces de anclaje en desarrollo" },
+      "V12": { "name": "Doceava Hoja", "desc": "Todas las hojas formadas; ~10% de materia seca total acumulada" },
+      "V15": { "name": "Quinceava Hoja", "desc": "Se determinan granos por hilera; ~2 semanas para floración" },
+      "V17": { "name": "Diecisieteava Hoja", "desc": "Mayor vulnerabilidad al granizo y estrés hídrico" },
+      "VT": { "name": "Panojamiento", "desc": "Emergencia de panoja; 65% de N, 50% de P, 85% de K absorbidos" },
+      "R1": { "name": "Floración", "desc": "Estigmas visibles; etapa crítica de determinación de rendimiento" },
+      "R2": { "name": "Ampolla", "desc": "Granos con 85% de humedad; comienza traslocación de nutrientes" },
+      "R3": { "name": "Grano Lechoso", "desc": "Acumulación de almidón; granos con 80% de humedad" },
+      "R4": { "name": "Grano Pastoso", "desc": "~50% del peso seco máximo; granos con 70% de humedad" },
+      "R5": { "name": "Dentado", "desc": "~90% de materia seca acumulada; 55-60% de humedad" },
+      "R6": { "name": "Madurez", "desc": "Capa negra formada; 30-35% de humedad; rendimiento final determinado" }
+    },
+    "soybean": {
+      "VE": { "name": "Emergencia", "desc": "Cotiledones sobre la superficie del suelo" },
+      "VC": { "name": "Cotiledón", "desc": "Hojas unifoliadas desplegadas; cotiledones completamente abiertos" },
+      "V1": { "name": "Primer Nudo", "desc": "Primera hoja trifoliada completamente desarrollada" },
+      "V2": { "name": "Segundo Nudo", "desc": "Segunda hoja trifoliada; nodulación activa" },
+      "V3": { "name": "Tercer Nudo", "desc": "Comienza crecimiento vegetativo rápido; fijación de N en aumento" },
+      "V5": { "name": "Quinto Nudo", "desc": "Cierre de canopeo; fijación de N llegando al máximo" },
+      "R1": { "name": "Inicio de Floración", "desc": "Primera flor en cualquier nudo; sensible al fotoperíodo" },
+      "R2": { "name": "Plena Floración", "desc": "Flor abierta en uno de los dos nudos superiores" },
+      "R3": { "name": "Inicio de Vaina", "desc": "Vaina de 5mm en uno de los cuatro nudos superiores" },
+      "R4": { "name": "Plena Vaina", "desc": "Vaina de 2cm en uno de los cuatro nudos superiores" },
+      "R5": { "name": "Inicio de Llenado", "desc": "Semilla de 3mm en vainas superiores; llenado rápido" },
+      "R6": { "name": "Pleno Llenado", "desc": "Semilla verde llena la cavidad de la vaina en nudos superiores" },
+      "R7": { "name": "Inicio de Madurez", "desc": "Una vaina madura en tallo principal; hojas amarilleando" },
+      "R8": { "name": "Plena Madurez", "desc": "95% de vainas maduras; listo para cosecha con 13% de humedad" }
+    },
+    "wheat": {
+      "E": { "name": "Emergencia", "desc": "El coleóptilo emerge del suelo" },
+      "S": { "name": "Plántula", "desc": "Primera hoja desplegada; raíces seminales activas" },
+      "T": { "name": "Macollaje", "desc": "Macollos formándose desde la corona; sistema radicular expandiéndose" },
+      "SE": { "name": "Elongación del Tallo", "desc": "Entrenudos elongándose; la vernalización debe estar cumplida" },
+      "BT": { "name": "Embuchamiento", "desc": "Vaina de hoja bandera hinchándose con la espiga adentro" },
+      "HD": { "name": "Espigamiento", "desc": "La espiga emerge de la vaina de la hoja bandera" },
+      "AN": { "name": "Antesis", "desc": "Floración; polinización en curso" },
+      "ML": { "name": "Grano Lechoso", "desc": "El grano contiene líquido lechoso; llenado de grano" },
+      "DG": { "name": "Grano Pastoso", "desc": "Contenido del grano pastoso; perdiendo color verde" },
+      "MT": { "name": "Madurez", "desc": "Grano duro; madurez fisiológica alcanzada" }
+    },
+    "rapeseed": {
+      "E": { "name": "Emergencia", "desc": "Los cotiledones emergen del suelo" },
+      "RS": { "name": "Roseta (2-4 hojas)", "desc": "Formación de roseta; hojas expandiéndose planas" },
+      "R6": { "name": "Roseta (6-8 hojas)", "desc": "Roseta completa; preparándose para vernalización" },
+      "SE": { "name": "Elongación del Tallo", "desc": "Comienza encañazón; entrenudos elongándose; vernalización debe estar cumplida" },
+      "IE": { "name": "Emergencia de Inflorescencia", "desc": "Botones florales visibles en racimo terminal" },
+      "FF": { "name": "Primera Flor", "desc": "10% de flores abiertas; comienza determinación crítica de rendimiento" },
+      "FL": { "name": "Plena Floración", "desc": "50%+ flores abiertas; máxima polinización" },
+      "PD": { "name": "Desarrollo de Silicua", "desc": "Silicuas elongándose; semillas desarrollándose" },
+      "SF": { "name": "Llenado de Semilla", "desc": "Semillas llenándose; cambiando de verde a marrón" },
+      "MT": { "name": "Madurez", "desc": "Semillas marrón oscuro/negro; silicuas secas; listo para cosecha" }
+    }
+  },
   "crops": {
     "corn": "Maíz",
     "soybean": "Soja",

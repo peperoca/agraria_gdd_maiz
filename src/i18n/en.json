@@ -436,6 +436,68 @@
     "noCoords": "No farms have coordinates set. Edit a farm to add a map pin.",
     "tapPin": "Tap a pin to switch to that farm."
   },
+  "stages": {
+    "corn": {
+      "VE": { "name": "Emergence", "desc": "Shoot emerges from soil; photosynthesis begins" },
+      "V1": { "name": "First Leaf", "desc": "First leaf collar visible; nodal roots emerging" },
+      "V2": { "name": "Second Leaf", "desc": "Plant relies on seed energy; seminal roots at max size" },
+      "V3": { "name": "Third Leaf", "desc": "Seed no longer contributing; plant dependent on photosynthesis" },
+      "V4": { "name": "Fourth Leaf", "desc": "Critical weed control period begins" },
+      "V6": { "name": "Sixth Leaf", "desc": "Growing point above soil; nodal root system dominant" },
+      "V8": { "name": "Eighth Leaf", "desc": "Rapid growth phase; ear shoots visible" },
+      "V9": { "name": "Ninth Leaf", "desc": "Kernel row number being fixed; brace roots developing" },
+      "V12": { "name": "Twelfth Leaf", "desc": "All leaves formed; ~10% total dry matter accumulated" },
+      "V15": { "name": "Fifteenth Leaf", "desc": "Kernels per row being determined; ~2 weeks from silking" },
+      "V17": { "name": "Seventeenth Leaf", "desc": "Increasing vulnerability to hail and moisture stress" },
+      "VT": { "name": "Tassel", "desc": "Tassel emergence; 65% of N, 50% of P, 85% of K taken up" },
+      "R1": { "name": "Silking", "desc": "Silks visible; critical yield-determining stage" },
+      "R2": { "name": "Blister", "desc": "Kernels at 85% moisture; nutrient translocation begins" },
+      "R3": { "name": "Milk", "desc": "Starch accumulation; kernels at 80% moisture" },
+      "R4": { "name": "Dough", "desc": "~50% maximum dry weight; kernels at 70% moisture" },
+      "R5": { "name": "Dent", "desc": "~90% dry matter accumulated; 55-60% moisture" },
+      "R6": { "name": "Maturity", "desc": "Black layer formed; 30-35% moisture; final yield determined" }
+    },
+    "soybean": {
+      "VE": { "name": "Emergence", "desc": "Cotyledons above soil surface" },
+      "VC": { "name": "Cotyledon", "desc": "Unifoliolate leaves unrolled; cotyledons fully open" },
+      "V1": { "name": "First Node", "desc": "First trifoliolate leaf fully developed" },
+      "V2": { "name": "Second Node", "desc": "Second trifoliolate; nodulation active" },
+      "V3": { "name": "Third Node", "desc": "Rapid vegetative growth begins; N fixation increasing" },
+      "V5": { "name": "Fifth Node", "desc": "Canopy closing; peak N fixation approaching" },
+      "R1": { "name": "Begin Bloom", "desc": "First flower on any node; photoperiod sensitive" },
+      "R2": { "name": "Full Bloom", "desc": "Open flower at one of two uppermost nodes" },
+      "R3": { "name": "Begin Pod", "desc": "Pod 5mm at one of four uppermost nodes" },
+      "R4": { "name": "Full Pod", "desc": "Pod 2cm at one of four uppermost nodes" },
+      "R5": { "name": "Begin Seed", "desc": "Seed 3mm in pod at upper nodes; rapid seed fill" },
+      "R6": { "name": "Full Seed", "desc": "Green seed fills pod cavity at upper nodes" },
+      "R7": { "name": "Begin Maturity", "desc": "One mature pod on main stem; leaves yellowing" },
+      "R8": { "name": "Full Maturity", "desc": "95% of pods mature; harvest ready at 13% moisture" }
+    },
+    "wheat": {
+      "E": { "name": "Emergence", "desc": "Coleoptile emerges from soil" },
+      "S": { "name": "Seedling", "desc": "First leaf unfolded; seminal roots active" },
+      "T": { "name": "Tillering", "desc": "Tillers forming from crown; root system expanding" },
+      "SE": { "name": "Stem Extension", "desc": "Internodes elongating; vernalization must be met" },
+      "BT": { "name": "Booting", "desc": "Flag leaf sheath swelling with head inside" },
+      "HD": { "name": "Heading", "desc": "Head emerging from flag leaf sheath" },
+      "AN": { "name": "Anthesis", "desc": "Flowering; pollination occurring" },
+      "ML": { "name": "Milk", "desc": "Kernel contains milky liquid; grain filling" },
+      "DG": { "name": "Dough", "desc": "Kernel contents doughy; losing green color" },
+      "MT": { "name": "Maturity", "desc": "Kernel hard; physiological maturity reached" }
+    },
+    "rapeseed": {
+      "E": { "name": "Emergence", "desc": "Cotyledons emerge from soil" },
+      "RS": { "name": "Rosette (2-4 leaves)", "desc": "Rosette formation; leaves expanding flat" },
+      "R6": { "name": "Rosette (6-8 leaves)", "desc": "Full rosette; preparing for vernalization" },
+      "SE": { "name": "Stem Elongation", "desc": "Bolting begins; internodes elongating; vernalization must be met" },
+      "IE": { "name": "Inflorescence Emergence", "desc": "Flower buds visible in terminal cluster" },
+      "FF": { "name": "First Flower", "desc": "10% flowers open; critical yield determination begins" },
+      "FL": { "name": "Full Flowering", "desc": "50%+ flowers open; peak pollination" },
+      "PD": { "name": "Pod Development", "desc": "Siliques elongating; seeds developing" },
+      "SF": { "name": "Seed Filling", "desc": "Seeds filling; turning from green to brown" },
+      "MT": { "name": "Maturity", "desc": "Seeds dark brown/black; pods dry; harvest ready" }
+    }
+  },
   "crops": {
     "corn": "Corn",
     "soybean": "Soybean",

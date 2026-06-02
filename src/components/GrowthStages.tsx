@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { getCropConfig, getKeyStages, getBaseCrop, type CropType } from '../utils/cropConfig';
+import { getCropConfig, getKeyStages, getBaseCrop, getTranslatedStage, type CropType } from '../utils/cropConfig';
 import type { CornStage, DailyGdd } from '../types';
 import type { PtuDay } from '../utils/photoperiod';
 import type { VernalizationDay } from '../utils/vernalization';
@@ -151,7 +151,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
         <div className="agraria-info-row">
           <div className="flex items-baseline gap-2 mb-1">
             <span className="text-xs font-semibold" style={{ color: 'var(--it)' }}>
-              {currentStage.shortName} — {currentStage.name}
+              {currentStage.shortName} — {getTranslatedStage(t, baseCrop, currentStage).name}
             </span>
             {stageDateMap.get(currentStage.shortName) && (
               <span className="text-[10px]" style={{ color: 'var(--it)', opacity: 0.6 }}>
@@ -160,7 +160,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
             )}
           </div>
           <p className="text-[11px]" style={{ color: 'var(--it)', opacity: 0.75 }}>
-            {currentStage.description}
+            {getTranslatedStage(t, baseCrop, currentStage).description}
           </p>
         </div>
       )}
@@ -171,7 +171,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
           <div className="flex items-baseline gap-2 mb-1">
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: secondaryColor, color: '#fff' }}>{secondaryLabel}</span>
             <span className="text-xs font-semibold" style={{ color: 'var(--it)' }}>
-              {currentStageSecondary.shortName} — {currentStageSecondary.name}
+              {currentStageSecondary.shortName} — {getTranslatedStage(t, baseCrop, currentStageSecondary).name}
             </span>
             {secondaryStageDateMap.get(currentStageSecondary.shortName) && (
               <span className="text-[10px]" style={{ color: 'var(--it)', opacity: 0.6 }}>
@@ -180,7 +180,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
             )}
           </div>
           <p className="text-[11px]" style={{ color: 'var(--it)', opacity: 0.75 }}>
-            {currentStageSecondary.description}
+            {getTranslatedStage(t, baseCrop, currentStageSecondary).description}
           </p>
         </div>
       )}
@@ -189,7 +189,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
       {nextStage && (
         <div className="rounded-[var(--r)] p-2.5" style={{ background: 'var(--wb)' }}>
           <p className="text-[11px]" style={{ color: 'var(--wt)' }}>
-            <span className="font-semibold">{t('growthStages.nextGdd', { stage: nextStage.shortName, name: nextStage.name, gdd: nextStage.gdd })}</span>
+            <span className="font-semibold">{t('growthStages.nextGdd', { stage: nextStage.shortName, name: getTranslatedStage(t, baseCrop, nextStage).name, gdd: nextStage.gdd })}</span>
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--wt)', opacity: 0.75 }}>
             {t('growthStages.gddRemaining', { amount: Math.round(nextStage.gdd - cumulativeGdd) })}
@@ -240,7 +240,7 @@ export function GrowthStages({ cumulativeGdd, gddData, cropType = 'corn', ptuDat
                   >
                     <td className="py-1 px-1.5 text-center">{isPastGdd ? '✓' : '○'}</td>
                     <td className="py-1 px-1.5 font-medium">{stage.shortName}</td>
-                    <td className="py-1 px-1.5">{stage.name}</td>
+                    <td className="py-1 px-1.5">{getTranslatedStage(t, baseCrop, stage).name}</td>
                     <td className="py-1 px-1.5 text-right">{stage.gdd}</td>
                     {hasSecondary && (
                       <td className="py-1 px-1.5 text-right" style={{ color: isPastSec ? secondaryColor : 'var(--tx3)' }}>
