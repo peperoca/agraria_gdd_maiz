@@ -40,7 +40,8 @@ export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBa
       { maxZoom: 18, opacity: 0.7 }
     ).addTo(map);
 
-    // Add markers for each farm
+    // Farm markers layer group
+    const farmsLayer = L.layerGroup();
     farmsWithCoords.forEach((farm) => {
       const isCurrent = farm.id === currentFarmId;
       const size = isCurrent ? 20 : 14;
@@ -54,9 +55,8 @@ export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBa
         className: '',
       });
 
-      const marker = L.marker([farm.latitude!, farm.longitude!], { icon }).addTo(map);
+      const marker = L.marker([farm.latitude!, farm.longitude!], { icon });
 
-      // Permanent label with farm name
       marker.bindTooltip(farm.name, {
         permanent: true,
         direction: 'top',
@@ -67,9 +67,13 @@ export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBa
       marker.on('click', () => {
         onSelectFarm(farm.id);
       });
-    });
 
-    // Add markers for each weather station
+      farmsLayer.addLayer(marker);
+    });
+    farmsLayer.addTo(map);
+
+    // Station markers layer group
+    const stationsLayer = L.layerGroup();
     stations.forEach((station) => {
       const stationIcon = L.divIcon({
         html: '<div style="font-size:18px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">🌡️</div>',
@@ -78,7 +82,7 @@ export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBa
         className: '',
       });
 
-      const stationMarker = L.marker([station.latitude, station.longitude], { icon: stationIcon, interactive: false }).addTo(map);
+      const stationMarker = L.marker([station.latitude, station.longitude], { icon: stationIcon, interactive: false });
 
       stationMarker.bindTooltip(station.name, {
         permanent: true,
@@ -86,7 +90,17 @@ export function FarmMapView({ farms, stations, currentFarmId, onSelectFarm, onBa
         offset: [0, -14],
         className: 'farm-map-tooltip station-tooltip',
       });
+
+      stationsLayer.addLayer(stationMarker);
     });
+    stationsLayer.addTo(map);
+
+    // Layer control for toggling
+    const overlays: Record<string, L.LayerGroup> = {
+      '🟠 Farms': farmsLayer,
+      '🌡️ Stations': stationsLayer,
+    };
+    L.control.layers(undefined, overlays, { collapsed: false, position: 'topright' }).addTo(map);
 
     // Fit bounds to show all farms and stations
     const allPoints: L.LatLngTuple[] = [

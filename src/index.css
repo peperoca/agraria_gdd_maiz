@@ -268,3 +268,18 @@ body {
 .farm-map-tooltip::before {
   border-top-color: rgba(0,0,0,0.75) !important;
 }
+
+/* Leaflet layers control on satellite map */
+.leaflet-control-layers {
+  background: rgba(0,0,0,0.7) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  border-radius: 6px !important;
+  color: #fff !important;
+  font-size: 12px !important;
+}
+.leaflet-control-layers label {
+  color: #fff !important;
+}
+.leaflet-control-layers-separator {
+  border-top-color: rgba(255,255,255,0.2) !important;
+}
