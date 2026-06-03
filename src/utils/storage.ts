@@ -34,12 +34,13 @@ interface CachedWeather {
   timestamp: number;
 }
 
-export function getCachedWeatherData(stationMac: string): { gdd: DailyGdd[]; eto: DailyEto[]; rain: DailyRain[] } | null {
+export function getCachedWeatherData(stationMac: string, baseTempF: number = 50): { gdd: DailyGdd[]; eto: DailyEto[]; rain: DailyRain[] } | null {
   const raw = localStorage.getItem(WEATHER_CACHE_KEY);
   if (!raw) return null;
   try {
     const cache = JSON.parse(raw) as Record<string, CachedWeather | { data: DailyGdd[]; timestamp: number }>;
-    const entry = cache[stationMac];
+    const cacheKey = `${stationMac}:${baseTempF}`;
+    const entry = cache[cacheKey] || cache[stationMac]; // fallback to old key for migration
     if (!entry) return null;
 
     // Cache is valid for 1 hour
@@ -57,17 +58,20 @@ export function getCachedWeatherData(stationMac: string): { gdd: DailyGdd[]; eto
   }
 }
 
-export function setCachedWeatherData(stationMac: string, gdd: DailyGdd[], eto: DailyEto[], rain: DailyRain[] = []): void {
+export function setCachedWeatherData(stationMac: string, gdd: DailyGdd[], eto: DailyEto[], rain: DailyRain[] = [], baseTempF: number = 50): void {
   const raw = localStorage.getItem(WEATHER_CACHE_KEY);
   const cache = raw ? JSON.parse(raw) : {};
-  cache[stationMac] = { gdd, eto, rain, timestamp: Date.now() };
+  const cacheKey = `${stationMac}:${baseTempF}`;
+  cache[cacheKey] = { gdd, eto, rain, timestamp: Date.now() };
+  // Clean up old un-keyed entry if exists
+  if (cache[stationMac] && stationMac !== cacheKey) delete cache[stationMac];
   try {
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(cache));
   } catch {
     // localStorage full — clear old cache and try again
     localStorage.removeItem(WEATHER_CACHE_KEY);
     const fresh: Record<string, CachedWeather> = {};
-    fresh[stationMac] = { gdd, eto, rain, timestamp: Date.now() };
+    fresh[cacheKey] = { gdd, eto, rain, timestamp: Date.now() };
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(fresh));
   }
 }

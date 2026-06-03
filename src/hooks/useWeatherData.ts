@@ -127,7 +127,7 @@ export function useWeatherData(): UseWeatherDataResult {
       }
 
       // Check cache first (skip if non-default gap preference — cache isn't source-aware)
-      const cached = gapPref === 'carry_forward' ? getCachedWeatherData(mac) : null;
+      const cached = gapPref === 'carry_forward' ? getCachedWeatherData(mac, baseTempF) : null;
       if (cached && cached.gdd.length > 0) {
         const firstDate = cached.gdd[0].date;
         if (firstDate <= sowingDate) {
@@ -177,7 +177,7 @@ export function useWeatherData(): UseWeatherDataResult {
       const allGddData = processWeatherData(readings, earliestDate, baseTempF, upperCapF);
       const allEtoData = processEtoData(readings, earliestDate);
       const allRainData = processRainData(rainReadings, earliestDate);
-      setCachedWeatherData(mac, allGddData, allEtoData, allRainData);
+      setCachedWeatherData(mac, allGddData, allEtoData, allRainData, baseTempF);
 
       const result: WeatherResult = { gdd: gddData, eto: etoData, rain: rainData, dailySummaries };
       setData(result);
