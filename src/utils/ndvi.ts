@@ -1,4 +1,5 @@
-import type { NdviReading, DailyEto, DailyETc } from '../types';
+import type { NdviReading, DailyEto, DailyETc, DailyGdd } from '../types';
+import type { CropConfig } from './cropConfig';
 
 export type KcFormula = 'linear' | 'nonlinear';
 
@@ -107,6 +108,102 @@ export function calculateETc(
       date: day.date,
       etc: Math.round(etc * 100) / 100,
       cumulative: Math.round(cumulative * 100) / 100,
+      kcSource: 'ndvi',
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Compute FAO-56 Kc from cumulative GDD using a trapezoidal curve.
+ * Phases: initial → development ramp → mid-season plateau → late-season decline → end
+ */
+export function computeFaoKc(cumulativeGdd: number, config: CropConfig): number {
+  const { kcMin, kcMax, kcEnd, gddKcDevStart, gddKcMidEnd, gddKcEnd } = config;
+
+  if (cumulativeGdd <= gddKcDevStart) {
+    return kcMin;
+  }
+  // Development phase: linear ramp from kcMin to kcMax
+  const devEnd = (gddKcDevStart + gddKcMidEnd) / 2;
+  if (cumulativeGdd < devEnd) {
+    const fraction = (cumulativeGdd - gddKcDevStart) / (devEnd - gddKcDevStart);
+    return kcMin + fraction * (kcMax - kcMin);
+  }
+  // Mid-season plateau
+  if (cumulativeGdd <= gddKcMidEnd) {
+    return kcMax;
+  }
+  // Late-season decline: linear ramp from kcMax to kcEnd
+  if (cumulativeGdd < gddKcEnd) {
+    const fraction = (cumulativeGdd - gddKcMidEnd) / (gddKcEnd - gddKcMidEnd);
+    return kcMax + fraction * (kcEnd - kcMax);
+  }
+  return kcEnd;
+}
+
+/**
+ * Calculate ETc with FAO Kc fallback: use FAO curve for days before first NDVI,
+ * then switch to satellite-derived Kc from the first observation onward.
+ */
+export function calculateETcWithFallback(
+  etoData: DailyEto[],
+  ndviReadings: NdviReading[] | null,
+  gddData: DailyGdd[],
+  cropConfig: CropConfig,
+): DailyETc[] {
+  if (etoData.length === 0 || gddData.length === 0) return [];
+
+  // Build GDD lookup by date
+  const gddByDate = new Map<string, number>();
+  for (const d of gddData) {
+    gddByDate.set(d.date, d.cumulative);
+  }
+
+  // Determine first NDVI observation date (if any)
+  const sortedNdvi = ndviReadings && ndviReadings.length > 0
+    ? [...ndviReadings].sort((a, b) => a.date.localeCompare(b.date))
+    : null;
+  const firstNdviDate = sortedNdvi ? sortedNdvi[0].date : null;
+
+  // Build NDVI Kc interpolation map for dates from first observation onward
+  const dates = etoData.map((d) => d.date);
+  const ndviKcMap = sortedNdvi ? interpolateKc(sortedNdvi, dates) : new Map<string, number>();
+
+  const results: DailyETc[] = [];
+  let cumulative = 0;
+
+  for (const day of etoData) {
+    const cumulativeGdd = gddByDate.get(day.date);
+    if (cumulativeGdd === undefined) continue;
+
+    let kc: number;
+    let source: 'fao' | 'ndvi';
+
+    // Use NDVI-derived Kc from first observation onward (if available)
+    if (firstNdviDate && day.date >= firstNdviDate) {
+      const ndviKc = ndviKcMap.get(day.date);
+      if (ndviKc !== undefined) {
+        kc = ndviKc;
+        source = 'ndvi';
+      } else {
+        kc = computeFaoKc(cumulativeGdd, cropConfig);
+        source = 'fao';
+      }
+    } else {
+      kc = computeFaoKc(cumulativeGdd, cropConfig);
+      source = 'fao';
+    }
+
+    const etc = day.eto * kc;
+    cumulative += etc;
+
+    results.push({
+      date: day.date,
+      etc: Math.round(etc * 100) / 100,
+      cumulative: Math.round(cumulative * 100) / 100,
+      kcSource: source,
     });
   }
 

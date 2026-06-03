@@ -8,7 +8,7 @@ import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverri
 import type { FieldOverride, Season } from '../types';
 import { applyRainOverrides, applyIrrigationOverrides } from '../utils/applyOverrides';
 import { OverrideCalendar } from './OverrideCalendar';
-import { calculateETc, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
+import { calculateETcWithFallback, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
 import { computeWaterBalance } from '../utils/waterBalance';
@@ -169,13 +169,13 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
     [irrigationData, overrides],
   );
 
-  // Calculate ETc when both ETo and NDVI are available (recalculates on formula change)
+  // Calculate ETc: use NDVI-derived Kc when available, FAO Kc fallback otherwise
   useEffect(() => {
-    if (etoData && ndviData && ndviData.length > 0) {
-      const etc = calculateETc(etoData, ndviData);
-      setEtcData(etc);
+    if (etoData && gddData) {
+      const etc = calculateETcWithFallback(etoData, ndviData, gddData, cropConfig);
+      setEtcData(etc.length > 0 ? etc : null);
     }
-  }, [etoData, ndviData, kcFormula]);
+  }, [etoData, ndviData, gddData, kcFormula, cropConfig]);
 
   // Truncate data at harvest date if season is ended
   const endDate = activeSeason?.endDate ?? null;

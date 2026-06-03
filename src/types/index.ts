@@ -171,6 +171,7 @@ export interface DailyETc {
   date: string;       // YYYY-MM-DD
   etc: number;        // Daily ETc (mm/day)
   cumulative: number; // Cumulative ETc (mm)
+  kcSource?: 'fao' | 'ndvi';
 }
 
 export interface SoilMoistureReading {
