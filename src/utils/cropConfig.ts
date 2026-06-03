@@ -174,7 +174,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 970, gddEnd: 1470, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
+    radiationWindow: { gddStart: 1220, gddEnd: 1870, preBufferDays: 5, referenceMJ: { poor: 900, adequate: 1100, good: 1300 }, periodLabel: 'R1→R5' },
   },
   'corn-intermediate': {
     label: 'Corn — Intermediate',
@@ -193,7 +193,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 1105, gddEnd: 1675, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
+    radiationWindow: { gddStart: 1390, gddEnd: 2130, preBufferDays: 5, referenceMJ: { poor: 900, adequate: 1100, good: 1300 }, periodLabel: 'R1→R5' },
   },
   'corn-long': {
     label: 'Corn — Long',
@@ -212,7 +212,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 1240, gddEnd: 1880, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
+    radiationWindow: { gddStart: 1560, gddEnd: 2390, preBufferDays: 5, referenceMJ: { poor: 900, adequate: 1100, good: 1300 }, periodLabel: 'R1→R5' },
   },
   // bare alias → intermediate
   corn: {
@@ -232,7 +232,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 1105, gddEnd: 1675, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
+    radiationWindow: { gddStart: 1390, gddEnd: 2130, preBufferDays: 5, referenceMJ: { poor: 900, adequate: 1100, good: 1300 }, periodLabel: 'R1→R5' },
   },
 
   // ── Soybean ──
@@ -255,7 +255,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 910, gddEnd: 1450, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
+    radiationWindow: { gddStart: 910, gddEnd: 1720, preBufferDays: 5, referenceMJ: { poor: 800, adequate: 1000, good: 1200 }, periodLabel: 'R3→R7' },
   },
   'soybean-intermediate': {
     label: 'Soybean — Intermediate (MG V-VI)',
@@ -276,7 +276,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1090, gddEnd: 1745, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
+    radiationWindow: { gddStart: 1090, gddEnd: 2070, preBufferDays: 5, referenceMJ: { poor: 800, adequate: 1000, good: 1200 }, periodLabel: 'R3→R7' },
   },
   'soybean-long': {
     label: 'Soybean — Long (MG VII-VIII)',
@@ -297,7 +297,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1270, gddEnd: 2040, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
+    radiationWindow: { gddStart: 1270, gddEnd: 2420, preBufferDays: 5, referenceMJ: { poor: 800, adequate: 1000, good: 1200 }, periodLabel: 'R3→R7' },
   },
   // bare alias → intermediate
   soybean: {
@@ -319,7 +319,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1090, gddEnd: 1745, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
+    radiationWindow: { gddStart: 1090, gddEnd: 2070, preBufferDays: 5, referenceMJ: { poor: 800, adequate: 1000, good: 1200 }, periodLabel: 'R3→R7' },
   },
 
   // ── Wheat ──
@@ -341,7 +341,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 565, gddEnd: 950, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
+    radiationWindow: { gddStart: 830, gddEnd: 1500, preBufferDays: 5, referenceMJ: { poor: 700, adequate: 900, good: 1100 }, periodLabel: 'HD→MT' },
   },
   'wheat-intermediate': {
     label: 'Wheat — Intermediate',
@@ -361,7 +361,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 660, gddEnd: 1110, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
+    radiationWindow: { gddStart: 970, gddEnd: 1750, preBufferDays: 5, referenceMJ: { poor: 700, adequate: 900, good: 1100 }, periodLabel: 'HD→MT' },
   },
   'wheat-long': {
     label: 'Wheat — Long (Winter)',
@@ -381,7 +381,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 790, gddEnd: 1330, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
+    radiationWindow: { gddStart: 1160, gddEnd: 2100, preBufferDays: 5, referenceMJ: { poor: 700, adequate: 900, good: 1100 }, periodLabel: 'HD→MT' },
   },
   // bare alias → intermediate
   wheat: {
@@ -402,7 +402,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
-    radiationWindow: { gddStart: 660, gddEnd: 1110, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
+    radiationWindow: { gddStart: 970, gddEnd: 1750, preBufferDays: 5, referenceMJ: { poor: 700, adequate: 900, good: 1100 }, periodLabel: 'HD→MT' },
   },
 
   // ── Rapeseed (Canola) ──
@@ -424,7 +424,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 820, gddEnd: 1240, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
+    radiationWindow: { gddStart: 820, gddEnd: 1400, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 800, good: 1000 }, periodLabel: 'FF→MT' },
   },
   'rapeseed-intermediate': {
     label: 'Rapeseed — Intermediate',
@@ -444,7 +444,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1000, gddEnd: 1500, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
+    radiationWindow: { gddStart: 1000, gddEnd: 1700, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 800, good: 1000 }, periodLabel: 'FF→MT' },
   },
   'rapeseed-long': {
     label: 'Rapeseed — Long (Winter)',
@@ -464,7 +464,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1240, gddEnd: 1850, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
+    radiationWindow: { gddStart: 1240, gddEnd: 2100, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 800, good: 1000 }, periodLabel: 'FF→MT' },
   },
   // bare alias → intermediate
   rapeseed: {
@@ -485,7 +485,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
-    radiationWindow: { gddStart: 1000, gddEnd: 1500, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
+    radiationWindow: { gddStart: 1000, gddEnd: 1700, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 800, good: 1000 }, periodLabel: 'FF→MT' },
   },
 };
 
