@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import type { Field, DailyGdd, DailyEto, DailyRain, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
+import type { Field, DailyGdd, DailyEto, DailyRain, DailyWeatherSummary, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
 import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons } from '../utils/api';
@@ -11,6 +11,7 @@ import { OverrideCalendar } from './OverrideCalendar';
 import { calculateETcWithFallback, recalculateKc, type KcFormula, type KcParams } from '../utils/ndvi';
 import { calculateCumulativeVernalization, getVernalizationStatus } from '../utils/vernalization';
 import { calculateDaylength, getDayOfYear, getPhotoperiodStatus, calculatePtu } from '../utils/photoperiod';
+import { calculateRadiationWindow, getRadiationAlert } from '../utils/solarRadiation';
 import { computeWaterBalance } from '../utils/waterBalance';
 import { exportFieldCsv } from '../utils/exportCsv';
 import { exportFieldPdf } from '../utils/exportPdf';
@@ -22,6 +23,7 @@ import { GrowthStages } from './GrowthStages';
 import { CropAlertBanner } from './CropAlertBanner';
 import { VernalizationCard } from './VernalizationCard';
 import { PhotoperiodCard } from './PhotoperiodCard';
+import { RadiationCard } from './RadiationCard';
 import { SoilMoistureChart } from './SoilMoistureChart';
 
 interface FieldDetailProps {
@@ -61,6 +63,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
   const [gddData, setGddData] = useState<DailyGdd[] | null>(null);
   const [etoData, setEtoData] = useState<DailyEto[] | null>(null);
   const [rainData, setRainData] = useState<DailyRain[] | null>(null);
+  const [dailySummaries, setDailySummaries] = useState<DailyWeatherSummary[]>([]);
   const [ndviDataRaw, setNdviDataRaw] = useState<NdviReading[] | null>(null);
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
   const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
@@ -92,6 +95,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
         setGddData(result.gdd);
         setEtoData(result.eto);
         setRainData(result.rain);
+        setDailySummaries(result.dailySummaries);
       })
       .catch(() => {});
   }, [effectiveSowingDate, field.stationMac, effectiveCropType, fetchData, cropConfig.baseTempF, cropConfig.upperCapF, gapPref]);
@@ -184,6 +188,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
   const tRain = useMemo(() => !effectiveRain || !endDate ? effectiveRain : effectiveRain.filter(d => d.date <= endDate), [effectiveRain, endDate]);
   const tEtc = useMemo(() => !etcData || !endDate ? etcData : etcData.filter(d => d.date <= endDate), [etcData, endDate]);
   const tIrrig = useMemo(() => !effectiveIrrigation || !endDate ? effectiveIrrigation : effectiveIrrigation.filter(d => d.date <= endDate), [effectiveIrrigation, endDate]);
+  const tSummaries = useMemo(() => !endDate ? dailySummaries : dailySummaries.filter(d => d.date <= endDate), [dailySummaries, endDate]);
 
   const latestGdd = tGdd && tGdd.length > 0 ? tGdd[tGdd.length - 1] : null;
   const cumulative = latestGdd?.cumulative ?? 0;
@@ -259,6 +264,14 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
         return getPhotoperiodStatus(daylength, cropConfig.criticalPhotoperiod!);
       })()
     : null;
+
+  // Solar radiation window
+  const radiationStatus = useMemo(() => {
+    if (!cropConfig.radiationWindow || !tGdd || tGdd.length === 0 || tSummaries.length === 0) return null;
+    return calculateRadiationWindow(tGdd, tSummaries, cropConfig.radiationWindow, aswData);
+  }, [tGdd, tSummaries, cropConfig.radiationWindow, aswData]);
+
+  const radiationAlert = radiationStatus ? getRadiationAlert(radiationStatus) : null;
 
   return (
     <div className="space-y-3">
@@ -358,6 +371,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
       {/* Crop alerts */}
       {vernAlert && <CropAlertBanner type={vernAlert.type} message={vernAlert.message} />}
       {photoAlert && <CropAlertBanner type={photoAlert.type} message={photoAlert.message} />}
+      {radiationAlert && <CropAlertBanner type={radiationAlert.type} message={radiationAlert.message} />}
       {aswData && aswData.length > 0 && (() => {
         const latest = aswData[aswData.length - 1];
         if (latest.asw <= 0) {
@@ -502,6 +516,16 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
           cropLabel={cropConfig.maturityLabel}
           gddData={tGdd}
           maturityPtu={cropConfig.maturityPtu}
+        />
+      )}
+
+      {/* Solar radiation window (all crops) */}
+      {cropConfig.radiationWindow && tGdd && tSummaries.length > 0 && (
+        <RadiationCard
+          gddData={tGdd}
+          dailySummaries={tSummaries}
+          radiationConfig={cropConfig.radiationWindow}
+          aswData={aswData}
         />
       )}
 

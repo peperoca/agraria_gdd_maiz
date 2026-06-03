@@ -43,6 +43,14 @@ export interface CropConfig {
   rootingDepthM: number;
   /** Management Allowable Depletion default (fraction 0-1) */
   madDefault: number;
+  /** Critical solar radiation window for yield determination */
+  radiationWindow?: {
+    gddStart: number;
+    gddEnd: number;
+    preBufferDays: number;
+    referenceMJ: { poor: number; adequate: number; good: number };
+    periodLabel: string;
+  };
 }
 
 // ── Helper: scale stage GDD values proportionally ──
@@ -166,6 +174,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 970, gddEnd: 1470, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
   },
   'corn-intermediate': {
     label: 'Corn — Intermediate',
@@ -184,6 +193,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 1105, gddEnd: 1675, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
   },
   'corn-long': {
     label: 'Corn — Long',
@@ -202,6 +212,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 1240, gddEnd: 1880, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
   },
   // bare alias → intermediate
   corn: {
@@ -221,6 +232,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2500,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 1105, gddEnd: 1675, preBufferDays: 5, referenceMJ: { poor: 450, adequate: 550, good: 650 }, periodLabel: 'Silking ±15d' },
   },
 
   // ── Soybean ──
@@ -243,6 +255,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 910, gddEnd: 1450, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
   },
   'soybean-intermediate': {
     label: 'Soybean — Intermediate (MG V-VI)',
@@ -263,6 +276,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1090, gddEnd: 1745, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
   },
   'soybean-long': {
     label: 'Soybean — Long (MG VII-VIII)',
@@ -283,6 +297,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1270, gddEnd: 2040, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
   },
   // bare alias → intermediate
   soybean: {
@@ -304,6 +319,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 2400,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1090, gddEnd: 1745, preBufferDays: 5, referenceMJ: { poor: 600, adequate: 750, good: 900 }, periodLabel: 'R3–R6' },
   },
 
   // ── Wheat ──
@@ -325,6 +341,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 565, gddEnd: 950, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
   },
   'wheat-intermediate': {
     label: 'Wheat — Intermediate',
@@ -344,6 +361,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 660, gddEnd: 1110, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
   },
   'wheat-long': {
     label: 'Wheat — Long (Winter)',
@@ -363,6 +381,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 790, gddEnd: 1330, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
   },
   // bare alias → intermediate
   wheat: {
@@ -383,6 +402,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1750,
     rootingDepthM: 1.2,
     madDefault: 0.55,
+    radiationWindow: { gddStart: 660, gddEnd: 1110, preBufferDays: 5, referenceMJ: { poor: 350, adequate: 450, good: 550 }, periodLabel: '30d pre-AN → AN' },
   },
 
   // ── Rapeseed (Canola) ──
@@ -404,6 +424,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 820, gddEnd: 1240, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
   },
   'rapeseed-intermediate': {
     label: 'Rapeseed — Intermediate',
@@ -423,6 +444,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1000, gddEnd: 1500, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
   },
   'rapeseed-long': {
     label: 'Rapeseed — Long (Winter)',
@@ -442,6 +464,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1240, gddEnd: 1850, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
   },
   // bare alias → intermediate
   rapeseed: {
@@ -462,6 +485,7 @@ export const CROP_CONFIGS: Record<CropType, CropConfig> = {
     gddKcEnd: 1700,
     rootingDepthM: 1.0,
     madDefault: 0.50,
+    radiationWindow: { gddStart: 1000, gddEnd: 1500, preBufferDays: 5, referenceMJ: { poor: 500, adequate: 650, good: 800 }, periodLabel: 'FF → SF' },
   },
 };
 

@@ -544,10 +544,31 @@ function LegacyBalanceChart({ etcData, rainData, irrigationData }: Omit<WaterBal
   );
 }
 
+// ── Kc source legend ──
+function KcSourceLegend({ etcData }: { etcData: DailyETc[] }) {
+  const faoDays = etcData.filter((d) => d.kcSource === 'fao').length;
+  if (faoDays === 0) return null;
+  const ndviDays = etcData.filter((d) => d.kcSource === 'ndvi').length;
+  const firstNdvi = etcData.find((d) => d.kcSource === 'ndvi');
+  return (
+    <div className="text-[10px] mt-1" style={{ color: 'var(--tx3)' }}>
+      Kc: <span style={{ color: '#f59e0b' }}>● FAO ({faoDays}d)</span>
+      {ndviDays > 0 && (
+        <> → <span style={{ color: '#22c55e' }}>● NDVI ({ndviDays}d{firstNdvi ? `, from ${firstNdvi.date}` : ''})</span></>
+      )}
+    </div>
+  );
+}
+
 // ── Main export: picks the right chart based on available data ──
 export function WaterBalanceChart({ etcData, rainData, irrigationData, aswData }: WaterBalanceChartProps) {
-  if (aswData && aswData.length > 0) {
-    return <ASWChart aswData={aswData} etcData={etcData} rainData={rainData} irrigationData={irrigationData} />;
-  }
-  return <LegacyBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} />;
+  return (
+    <>
+      {aswData && aswData.length > 0
+        ? <ASWChart aswData={aswData} etcData={etcData} rainData={rainData} irrigationData={irrigationData} />
+        : <LegacyBalanceChart etcData={etcData} rainData={rainData} irrigationData={irrigationData} />
+      }
+      <KcSourceLegend etcData={etcData} />
+    </>
+  );
 }

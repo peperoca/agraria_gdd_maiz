@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { DailyGdd, DailyEto, DailyRain, WeatherReading, WeatherSource } from '../types';
+import type { DailyGdd, DailyEto, DailyRain, DailyWeatherSummary, WeatherReading, WeatherSource } from '../types';
 import { processWeatherData } from '../utils/gdd';
-import { processEtoData } from '../utils/eto';
+import { processEtoData, aggregateDailySummaries } from '../utils/eto';
 import { processRainData } from '../utils/rain';
 import { getWeatherData, type WeatherReadingRaw } from '../utils/api';
 import { getCachedWeatherData, setCachedWeatherData, getSettings } from '../utils/storage';
@@ -10,6 +10,7 @@ interface WeatherResult {
   gdd: DailyGdd[];
   eto: DailyEto[];
   rain: DailyRain[];
+  dailySummaries: DailyWeatherSummary[];
 }
 
 export type GapFillPreference = 'carry_forward' | 'fallback';
@@ -151,7 +152,7 @@ export function useWeatherData(): UseWeatherDataResult {
             return { ...d, cumulative: Math.round(rainCum * 100) / 100 };
           });
 
-          const result: WeatherResult = { gdd: recalcGdd, eto: recalcEto, rain: recalcRain };
+          const result: WeatherResult = { gdd: recalcGdd, eto: recalcEto, rain: recalcRain, dailySummaries: [] };
           setData(result);
           setLoading(false);
           return result;
@@ -167,6 +168,7 @@ export function useWeatherData(): UseWeatherDataResult {
       const gddData = processWeatherData(readings, sowingDate, baseTempF, upperCapF);
       const etoData = processEtoData(readings, sowingDate);
       const rainData = processRainData(rainReadings, sowingDate);
+      const { summaries: dailySummaries } = aggregateDailySummaries(readings, sowingDate);
 
       // Cache the dataset
       const earliestDate = readings.length > 0
@@ -177,7 +179,7 @@ export function useWeatherData(): UseWeatherDataResult {
       const allRainData = processRainData(rainReadings, earliestDate);
       setCachedWeatherData(mac, allGddData, allEtoData, allRainData);
 
-      const result: WeatherResult = { gdd: gddData, eto: etoData, rain: rainData };
+      const result: WeatherResult = { gdd: gddData, eto: etoData, rain: rainData, dailySummaries };
       setData(result);
       setLoading(false);
       return result;
