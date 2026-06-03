@@ -273,6 +273,17 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
 
   const radiationAlert = radiationStatus ? getRadiationAlert(radiationStatus) : null;
 
+  // Station change alert for active seasons that started before the change
+  const stationChangeAlert = useMemo(() => {
+    if (!field.stationChangedAt || !field.previousStationName) return null;
+    if (!activeSeason?.isActive) return null;
+    if (activeSeason.sowingDate >= field.stationChangedAt) return null;
+    return t('alerts.stationChanged', {
+      date: format(parseISO(field.stationChangedAt), 'MMM d, yyyy'),
+      oldStation: field.previousStationName,
+    });
+  }, [field.stationChangedAt, field.previousStationName, activeSeason, t]);
+
   return (
     <div className="space-y-3">
       {/* Summary card */}
@@ -369,6 +380,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
       )}
 
       {/* Crop alerts */}
+      {stationChangeAlert && <CropAlertBanner type="info" message={stationChangeAlert} />}
       {vernAlert && <CropAlertBanner type={vernAlert.type} message={vernAlert.message} />}
       {photoAlert && <CropAlertBanner type={photoAlert.type} message={photoAlert.message} />}
       {radiationAlert && <CropAlertBanner type={radiationAlert.type} message={radiationAlert.message} />}

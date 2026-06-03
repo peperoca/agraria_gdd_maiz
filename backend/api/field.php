@@ -18,13 +18,17 @@ if ($fieldId <= 0) json_error('Field ID is required');
 
 // Verify ownership
 $stmt = $db->prepare("
-    SELECT id, name, sowing_date AS sowingDate, station_mac AS stationMac,
-           COALESCE(crop_type, 'corn') AS cropType, polygon,
-           farm_id AS farmId, created_at AS createdAt,
-           taw_mm AS tawMm, mad_pct AS madPct, taw_source AS tawSource,
-           coneat_gc AS coneatGc, initial_asw_mm AS initialAswMm
-    FROM fields
-    WHERE id = ? AND user_id = ?
+    SELECT f.id, f.name, f.sowing_date AS sowingDate, f.station_mac AS stationMac,
+           COALESCE(f.crop_type, 'corn') AS cropType, f.polygon,
+           f.farm_id AS farmId, f.created_at AS createdAt,
+           f.taw_mm AS tawMm, f.mad_pct AS madPct, f.taw_source AS tawSource,
+           f.coneat_gc AS coneatGc, f.initial_asw_mm AS initialAswMm,
+           f.previous_station_mac AS previousStationMac,
+           f.station_changed_at AS stationChangedAt,
+           ps.name AS previousStationName
+    FROM fields f
+    LEFT JOIN stations ps ON ps.mac = f.previous_station_mac
+    WHERE f.id = ? AND f.user_id = ?
 ");
 $stmt->execute([$fieldId, $user['id']]);
 $field = $stmt->fetch();

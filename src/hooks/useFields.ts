@@ -32,6 +32,9 @@ export function useFields(farmId?: number | null) {
           coneatGc: f.coneatGc ?? null,
           initialAswMm: f.initialAswMm ?? null,
           seasonId: f.seasonId ?? null,
+          previousStationMac: f.previousStationMac ?? null,
+          previousStationName: f.previousStationName ?? null,
+          stationChangedAt: f.stationChangedAt ?? null,
         }))
       );
     } catch (err) {

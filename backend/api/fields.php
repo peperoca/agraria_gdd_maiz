@@ -31,9 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                    f.taw_source AS tawSource, f.coneat_gc AS coneatGc,
                    f.initial_asw_mm AS initialAswMm,
                    s.id AS seasonId, s.is_active AS seasonIsActive,
-                   s.end_date AS seasonEndDate
+                   s.end_date AS seasonEndDate,
+                   f.previous_station_mac AS previousStationMac,
+                   f.station_changed_at AS stationChangedAt,
+                   ps.name AS previousStationName
             FROM fields f
             LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
+            LEFT JOIN stations ps ON ps.mac = f.previous_station_mac
             WHERE f.farm_id = ?
             ORDER BY f.created_at DESC
         ");

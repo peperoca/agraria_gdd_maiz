@@ -364,7 +364,10 @@
     "soilWiltingPoint": "Agua del suelo en punto de marchitez. Riegue inmediatamente — aplique {{amount}} mm para alcanzar el 80% de capacidad de campo.",
     "soilBelowThreshold": "Agua del suelo por debajo del umbral de seguridad ({{pct}}% disponible). Considere regar — aplique {{amount}} mm para alcanzar el 80% de capacidad de campo.",
     "deleteFarmConfirm": "¿Eliminar chacra \"{{name}}\" y todos sus lotes?",
-    "deleteFieldConfirm": "¿Eliminar \"{{name}}\"?"
+    "deleteFieldConfirm": "¿Eliminar \"{{name}}\"?",
+    "stationChanged": "Estación meteorológica cambiada el {{date}}. Los datos anteriores a esa fecha provienen de {{oldStation}}.",
+    "stationChangeConfirm": "Estación actualizada en {{fields}} campo(s). {{seasons}} temporada(s) activa(s) mostrarán un aviso de estación mixta.",
+    "stationDataGap": "Advertencia: la nueva estación puede no tener datos desde el inicio de la temporada activa más antigua."
   },
   "growthStages": {
     "title": "Etapas de Crecimiento",

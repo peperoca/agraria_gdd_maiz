@@ -124,6 +124,10 @@ export interface ServerFarm {
   createdAt: string;
   access?: 'owner' | 'shared' | 'admin';
   ownerUsername?: string | null;
+  // Station change propagation response (only present on PUT)
+  fieldsUpdated?: number;
+  activeSeasonsAffected?: number;
+  dataGapWarning?: boolean;
 }
 
 export async function getFarms(): Promise<ServerFarm[]> {
@@ -169,6 +173,10 @@ export interface ServerField {
   coneatGc?: string | null;
   initialAswMm?: number | null;
   seasonId?: number | null;
+  // Station change tracking
+  previousStationMac?: string | null;
+  previousStationName?: string | null;
+  stationChangedAt?: string | null;
 }
 
 export async function getFields(farmId?: number): Promise<ServerField[]> {

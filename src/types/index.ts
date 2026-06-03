@@ -21,6 +21,10 @@ export interface Field {
   initialAswMm: number | null;
   // Active season reference
   seasonId?: number | null;
+  // Station change tracking
+  previousStationMac?: string | null;
+  previousStationName?: string | null;
+  stationChangedAt?: string | null;  // YYYY-MM-DD
 }
 
 export interface Season {

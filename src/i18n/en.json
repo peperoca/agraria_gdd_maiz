@@ -364,7 +364,10 @@
     "soilWiltingPoint": "Soil water at wilting point. Irrigate immediately — apply {{amount}} mm to reach 80% field capacity.",
     "soilBelowThreshold": "Soil water below safety threshold ({{pct}}% available). Consider irrigating — apply {{amount}} mm to reach 80% field capacity.",
     "deleteFarmConfirm": "Delete farm \"{{name}}\" and all its fields?",
-    "deleteFieldConfirm": "Delete \"{{name}}\"?"
+    "deleteFieldConfirm": "Delete \"{{name}}\"?",
+    "stationChanged": "Weather station changed on {{date}}. Data before that date comes from {{oldStation}}.",
+    "stationChangeConfirm": "Station updated across {{fields}} field(s). {{seasons}} active season(s) will show a mixed-station notice.",
+    "stationDataGap": "Warning: the new station may not have data covering your earliest active season."
   },
   "growthStages": {
     "title": "Growth Stages",

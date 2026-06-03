@@ -59,9 +59,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     if (empty($fields)) json_error('No fields to update');
 
+    // Capture old station_id before updating
+    $oldStmt = $db->prepare("SELECT station_id FROM farms WHERE id = ?");
+    $oldStmt->execute([$farmId]);
+    $oldStationId = $oldStmt->fetchColumn();
+
     $params[] = $farmId;
     $stmt = $db->prepare("UPDATE farms SET " . implode(', ', $fields) . " WHERE id = ?");
     $stmt->execute($params);
+
+    // Check if station changed and propagate to all fields
+    $fieldsUpdated = 0;
+    $activeSeasonsAffected = 0;
+    $dataGapWarning = false;
+
+    $newStmt = $db->prepare("SELECT station_id FROM farms WHERE id = ?");
+    $newStmt->execute([$farmId]);
+    $newStationId = $newStmt->fetchColumn();
+
+    if ($newStationId && $oldStationId != $newStationId) {
+        // Resolve old MAC
+        $oldMac = null;
+        if ($oldStationId) {
+            $s = $db->prepare("SELECT mac FROM stations WHERE id = ?");
+            $s->execute([$oldStationId]);
+            $oldMac = $s->fetchColumn();
+        }
+        // Resolve new MAC
+        $s = $db->prepare("SELECT mac FROM stations WHERE id = ?");
+        $s->execute([$newStationId]);
+        $newMac = $s->fetchColumn();
+
+        if ($newMac) {
+            // Propagate to all fields under this farm
+            $upd = $db->prepare("
+                UPDATE fields
+                SET station_mac = ?,
+                    previous_station_mac = station_mac,
+                    station_changed_at = CURDATE()
+                WHERE farm_id = ?
+            ");
+            $upd->execute([$newMac, $farmId]);
+            $fieldsUpdated = $upd->rowCount();
+        }
+
+        // Count active seasons affected
+        $cnt = $db->prepare("
+            SELECT COUNT(*) FROM seasons s
+            JOIN fields f ON f.id = s.field_id
+            WHERE f.farm_id = ? AND s.is_active = 1
+        ");
+        $cnt->execute([$farmId]);
+        $activeSeasonsAffected = (int) $cnt->fetchColumn();
+
+        // Check data availability on new station
+        $earliest = $db->prepare("
+            SELECT MIN(s.sowing_date) FROM seasons s
+            JOIN fields f ON f.id = s.field_id
+            WHERE f.farm_id = ? AND s.is_active = 1
+        ");
+        $earliest->execute([$farmId]);
+        $earliestSowing = $earliest->fetchColumn();
+
+        if ($earliestSowing && $newMac) {
+            $sowingTs = strtotime($earliestSowing) * 1000;
+            $chk = $db->prepare("
+                SELECT COUNT(*) FROM weather_readings r
+                JOIN stations st ON st.id = r.station_id
+                WHERE st.mac = ? AND r.dateutc >= ?
+            ");
+            $chk->execute([$newMac, $sowingTs]);
+            $dataGapWarning = ((int) $chk->fetchColumn()) === 0;
+        }
+    }
 
     // Re-fetch to return updated data with distance
     $stmt = $db->prepare("
@@ -88,6 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $updated['stationDistanceKm'] = $updated['station_distance_km'] !== null ? (float) $updated['station_distance_km'] : null;
     $updated['createdAt'] = $updated['created_at'];
     unset($updated['station_mac'], $updated['station_name'], $updated['created_at'], $updated['station_distance_km']);
+
+    $updated['fieldsUpdated'] = $fieldsUpdated;
+    $updated['activeSeasonsAffected'] = $activeSeasonsAffected;
+    $updated['dataGapWarning'] = $dataGapWarning;
 
     json_response($updated);
 }

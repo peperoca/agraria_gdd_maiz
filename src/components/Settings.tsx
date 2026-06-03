@@ -152,8 +152,17 @@ export function Settings({ onLogout, currentFarm, onDeleteFarm, onSaved }: Setti
     if (!currentFarm) return;
     setSaving(true);
     try {
-      await updateFarm(currentFarm.id, { stationId });
+      const result = await updateFarm(currentFarm.id, { stationId });
       setShowStationPicker(false);
+      if (result.activeSeasonsAffected && result.activeSeasonsAffected > 0) {
+        alert(t('alerts.stationChangeConfirm', {
+          fields: result.fieldsUpdated ?? 0,
+          seasons: result.activeSeasonsAffected,
+        }));
+      }
+      if (result.dataGapWarning) {
+        alert(t('alerts.stationDataGap'));
+      }
       onSaved();
     } catch (err) {
       alert(err instanceof Error ? err.message : t('settings.failedUpdateStation'));
