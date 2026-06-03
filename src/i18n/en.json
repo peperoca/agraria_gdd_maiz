@@ -110,6 +110,10 @@
     "active": "Active",
     "ended": "Ended",
     "editSowingDate": "Click to edit sowing date",
+    "editCropType": "Edit crop type",
+    "undoHarvest": "Undo",
+    "undoHarvestConfirm": "Reactivate this season? The harvest date will be removed.",
+    "reactivate": "Reactivate season",
     "aswRollover": "Soil water carried over: {{value}} mm"
   },
   "menu": {

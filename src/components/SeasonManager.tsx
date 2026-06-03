@@ -27,6 +27,11 @@ export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonM
   const [sowDate, setSowDate] = useState('');
   const [savingSow, setSavingSow] = useState(false);
 
+  // Per-season crop type editing
+  const [cropEditing, setCropEditing] = useState<number | null>(null);
+  const [cropValue, setCropValue] = useState('');
+  const [savingCrop, setSavingCrop] = useState(false);
+
   // Per-season harvest editing
   const [harvestEditing, setHarvestEditing] = useState<number | null>(null);
   const [harvestDate, setHarvestDate] = useState('');
@@ -73,6 +78,31 @@ export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonM
       alert(err instanceof Error ? err.message : 'Failed to update sowing date');
     } finally {
       setSavingSow(false);
+    }
+  };
+
+  const handleCropTypeSave = async (seasonId: number) => {
+    if (!cropValue) return;
+    setSavingCrop(true);
+    try {
+      await updateSeason(seasonId, { crop_type: cropValue });
+      setCropEditing(null);
+      setCropValue('');
+      fetchSeasons();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update crop type');
+    } finally {
+      setSavingCrop(false);
+    }
+  };
+
+  const handleUndoHarvest = async (seasonId: number) => {
+    if (!confirm(t('season.undoHarvestConfirm', { defaultValue: 'Reactivate this season? The harvest date will be removed.' }))) return;
+    try {
+      await updateSeason(seasonId, { end_date: null, is_active: true });
+      fetchSeasons();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to reactivate season');
     }
   };
 
@@ -175,10 +205,48 @@ export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonM
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium" style={{ color: 'var(--tx)' }}>
-                        {config.label}
-                      </span>
-                      {s.isActive && (
+                      {cropEditing === s.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={cropValue}
+                            onChange={(e) => setCropValue(e.target.value)}
+                            className="agraria-input text-[11px]"
+                          >
+                            {(['Corn', 'Soybean', 'Wheat', 'Rapeseed'] as const).map((group) => (
+                              <optgroup key={group} label={group}>
+                                {CROP_DROPDOWN_OPTIONS.filter((o) => o.group === group).map((o) => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleCropTypeSave(s.id)}
+                            disabled={!cropValue || savingCrop}
+                            className="text-[10px] px-2 py-1 rounded font-medium"
+                            style={{ background: 'var(--blue)', color: '#fff' }}
+                          >
+                            {savingCrop ? '...' : 'OK'}
+                          </button>
+                          <button
+                            onClick={() => { setCropEditing(null); setCropValue(''); }}
+                            className="text-[10px] px-2 py-1 rounded"
+                            style={{ color: 'var(--tx3)' }}
+                          >
+                            {t('fieldForm.cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          className="text-xs font-medium cursor-pointer hover:underline"
+                          style={{ color: 'var(--tx)' }}
+                          onClick={() => { setCropEditing(s.id); setCropValue(s.cropType); }}
+                          title={t('season.editCropType', { defaultValue: 'Edit crop type' })}
+                        >
+                          {config.label} ✏️
+                        </span>
+                      )}
+                      {s.isActive && cropEditing !== s.id && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'var(--blue)', color: '#fff' }}>
                           {t('season.active')}
                         </span>
@@ -233,7 +301,17 @@ export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonM
                       </div>
                     )}
                     {s.endDate ? (
-                      <div>{t('season.harvestDateLabel')}: {format(parseISO(s.endDate), 'MMM d, yyyy')}</div>
+                      <div className="flex items-center gap-2">
+                        <span>{t('season.harvestDateLabel')}: {format(parseISO(s.endDate), 'MMM d, yyyy')}</span>
+                        <button
+                          onClick={() => handleUndoHarvest(s.id)}
+                          className="text-[9px] px-1.5 py-0.5 rounded underline"
+                          style={{ color: 'var(--orange)' }}
+                          title={t('season.undoHarvest', { defaultValue: 'Undo harvest' })}
+                        >
+                          {t('season.undoHarvest', { defaultValue: 'Undo' })}
+                        </button>
+                      </div>
                     ) : s.isActive ? (
                       <>
                         {isEditingHarvest ? (
@@ -273,7 +351,13 @@ export function SeasonManager({ fieldId, fieldName, lastAswMm, onBack }: SeasonM
                         )}
                       </>
                     ) : (
-                      <div style={{ color: 'var(--tx3)' }}>{t('season.ended')}</div>
+                      <button
+                        onClick={() => handleUndoHarvest(s.id)}
+                        className="text-[10px] underline"
+                        style={{ color: 'var(--orange)' }}
+                      >
+                        {t('season.reactivate', { defaultValue: 'Reactivate season' })}
+                      </button>
                     )}
                   </div>
                 </div>

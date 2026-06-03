@@ -110,6 +110,10 @@
     "active": "Activa",
     "ended": "Finalizada",
     "editSowingDate": "Clic para editar fecha de siembra",
+    "editCropType": "Editar tipo de cultivo",
+    "undoHarvest": "Deshacer",
+    "undoHarvestConfirm": "¿Reactivar esta temporada? Se eliminará la fecha de cosecha.",
+    "reactivate": "Reactivar temporada",
     "aswRollover": "Agua en suelo heredada: {{value}} mm"
   },
   "menu": {
