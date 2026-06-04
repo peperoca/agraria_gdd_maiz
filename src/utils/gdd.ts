@@ -96,7 +96,7 @@ export function calculateDailyGdd(
   // Group hourly temps by date
   const byDate = new Map<string, HourlyTemp[]>();
   for (const ht of hourlyTemps) {
-    if (ht.date < sowingDate) continue; // Skip data before sowing
+    if (ht.date <= sowingDate) continue; // Skip sowing day — accumulate from day after
     if (!byDate.has(ht.date)) {
       byDate.set(ht.date, []);
     }
