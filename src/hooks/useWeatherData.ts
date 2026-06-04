@@ -131,7 +131,7 @@ export function useWeatherData(): UseWeatherDataResult {
       if (cached && cached.gdd.length > 0) {
         const firstDate = cached.gdd[0].date;
         if (firstDate <= sowingDate) {
-          const filteredGdd = cached.gdd.filter((d) => d.date >= sowingDate);
+          const filteredGdd = cached.gdd.filter((d) => d.date > sowingDate);
           let gddCum = 0;
           const recalcGdd = filteredGdd.map((d) => {
             gddCum += d.gdd;
