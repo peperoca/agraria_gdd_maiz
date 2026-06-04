@@ -478,6 +478,7 @@ function App() {
               stationName={currentFarm?.stationName}
               stationDistanceKm={currentFarm?.stationDistanceKm}
               canWrite={canWrite}
+              farmId={currentFarmId ?? undefined}
             />
           )
         )}
