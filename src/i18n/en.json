@@ -35,7 +35,9 @@
     "welcomeTitle": "Welcome! Create your first farm",
     "welcomeDesc": "A farm groups your fields under a weather station. Place a pin on the map to auto-assign the nearest station.",
     "createFirstFarm": "+ Create Your First Farm",
-    "sowed": "Sowed:"
+    "sowed": "Sowed:",
+    "reorderTitle": "Reorder Fields",
+    "reorderDone": "Done"
   },
   "field": {
     "gddUnit": "GDD",
@@ -125,7 +127,8 @@
     "editField": "Edit Field",
     "editCrop": "Edit Crop",
     "fieldSettings": "Field Settings",
-    "language": "Language"
+    "language": "Language",
+    "reorderFields": "Reorder Fields"
   },
   "settings": {
     "farmSettings": "Farm Settings",

@@ -1,10 +1,18 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Field } from '../types';
 import { FieldCard } from './FieldCard';
 import { WeatherStationCard } from './WeatherStationCard';
+import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 
 const FIELD_ORDER_KEY = 'agraria-field-order';
+
+const CROP_EMOJI: Record<string, string> = {
+  corn: '🌽',
+  soybean: '🫘',
+  wheat: '🌾',
+  rapeseed: '🌻',
+};
 
 function getSavedOrder(farmId: number | undefined): number[] {
   if (!farmId) return [];
@@ -35,15 +43,12 @@ interface DashboardProps {
   stationDistanceKm?: number | null;
   canWrite?: boolean;
   farmId?: number;
+  reordering?: boolean;
+  onReorderDone?: () => void;
 }
 
-export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName, stationDistanceKm, canWrite = true, farmId }: DashboardProps) {
+export function Dashboard({ fields, onFieldClick, onAddField, stationMac, stationName, stationDistanceKm, canWrite = true, farmId, reordering = false, onReorderDone }: DashboardProps) {
   const { t } = useTranslation();
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const [overIdx, setOverIdx] = useState<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const touchDragIdx = useRef<number | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
 
   // Sort fields by saved order, appending any new fields at the end
   const sortedFields = useMemo(() => {
@@ -66,79 +71,15 @@ export function Dashboard({ fields, onFieldClick, onAddField, stationMac, statio
     setOrderedFields(sortedFields);
   }, [sortedFields]);
 
-  const persistOrder = useCallback((newFields: Field[]) => {
-    setOrderedFields(newFields);
-    saveOrder(farmId, newFields.map((f) => f.id));
+  const moveField = useCallback((fromIdx: number, toIdx: number) => {
+    setOrderedFields((prev) => {
+      const newFields = [...prev];
+      const [moved] = newFields.splice(fromIdx, 1);
+      newFields.splice(toIdx, 0, moved);
+      saveOrder(farmId, newFields.map((f) => f.id));
+      return newFields;
+    });
   }, [farmId]);
-
-  // Desktop drag & drop
-  const handleDragStart = (idx: number) => (e: React.DragEvent) => {
-    setDragIdx(idx);
-    e.dataTransfer.effectAllowed = 'move';
-    // Make drag image semi-transparent
-    if (e.currentTarget instanceof HTMLElement) {
-      e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
-    }
-  };
-
-  const handleDragOver = (idx: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setOverIdx(idx);
-  };
-
-  const handleDrop = (idx: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (dragIdx === null || dragIdx === idx) {
-      setDragIdx(null);
-      setOverIdx(null);
-      return;
-    }
-    const newFields = [...orderedFields];
-    const [moved] = newFields.splice(dragIdx, 1);
-    newFields.splice(idx, 0, moved);
-    persistOrder(newFields);
-    setDragIdx(null);
-    setOverIdx(null);
-  };
-
-  const handleDragEnd = () => {
-    setDragIdx(null);
-    setOverIdx(null);
-  };
-
-  // Touch-based reorder via long-press on drag handle
-  const handleTouchStart = (idx: number) => (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-    touchDragIdx.current = idx;
-    setDragIdx(idx);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchDragIdx.current === null || !listRef.current) return;
-    const y = e.touches[0].clientY;
-    const cards = listRef.current.querySelectorAll('[data-field-idx]');
-    for (let i = 0; i < cards.length; i++) {
-      const rect = cards[i].getBoundingClientRect();
-      if (y >= rect.top && y <= rect.bottom) {
-        setOverIdx(i);
-        break;
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (touchDragIdx.current !== null && overIdx !== null && touchDragIdx.current !== overIdx) {
-      const newFields = [...orderedFields];
-      const [moved] = newFields.splice(touchDragIdx.current, 1);
-      newFields.splice(overIdx, 0, moved);
-      persistOrder(newFields);
-    }
-    touchDragIdx.current = null;
-    touchStartY.current = null;
-    setDragIdx(null);
-    setOverIdx(null);
-  };
 
   if (fields.length === 0) {
     return (
@@ -161,45 +102,81 @@ export function Dashboard({ fields, onFieldClick, onAddField, stationMac, statio
     );
   }
 
+  // Reorder mode: compact list with up/down arrows
+  if (reordering) {
+    return (
+      <div className="space-y-2 pb-4">
+        <div className="sec-label">{t('dashboard.reorderTitle', { defaultValue: 'Reorder Fields' })}</div>
+        <div className="space-y-1">
+          {orderedFields.map((field, idx) => {
+            const baseCrop = getBaseCrop(field.cropType ?? 'corn');
+            const config = getCropConfig(field.cropType ?? 'corn');
+            return (
+              <div
+                key={field.id}
+                className="flex items-center gap-2 p-2.5 rounded-[var(--r)]"
+                style={{ background: 'var(--surface2)', border: '1px solid var(--bdr)' }}
+              >
+                {/* Position number */}
+                <span className="text-[10px] font-bold w-4 text-center shrink-0" style={{ color: 'var(--tx3)' }}>
+                  {idx + 1}
+                </span>
+
+                {/* Field name + crop */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate" style={{ color: 'var(--tx)' }}>
+                    {CROP_EMOJI[baseCrop] || '🌱'} {field.name}
+                  </div>
+                  <div className="text-[10px] truncate" style={{ color: 'var(--tx3)' }}>
+                    {config.label}
+                  </div>
+                </div>
+
+                {/* Up/Down buttons */}
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button
+                    onClick={() => idx > 0 && moveField(idx, idx - 1)}
+                    disabled={idx === 0}
+                    className="p-1 rounded"
+                    style={{ color: idx === 0 ? 'var(--bdr)' : 'var(--tx2)' }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => idx < orderedFields.length - 1 && moveField(idx, idx + 1)}
+                    disabled={idx === orderedFields.length - 1}
+                    className="p-1 rounded"
+                    style={{ color: idx === orderedFields.length - 1 ? 'var(--bdr)' : 'var(--tx2)' }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={onReorderDone}
+          className="agraria-btn-primary w-full text-xs py-2 mt-2"
+        >
+          {t('dashboard.reorderDone', { defaultValue: 'Done' })}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {stationMac && (
         <WeatherStationCard stationMac={stationMac} stationName={stationName || stationMac} stationDistanceKm={stationDistanceKm} />
       )}
-      <div ref={listRef} className="space-y-3" onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-        {orderedFields.map((field, idx) => (
-          <div
-            key={field.id}
-            data-field-idx={idx}
-            draggable
-            onDragStart={handleDragStart(idx)}
-            onDragOver={handleDragOver(idx)}
-            onDrop={handleDrop(idx)}
-            onDragEnd={handleDragEnd}
-            className="relative"
-            style={{
-              opacity: dragIdx === idx ? 0.5 : 1,
-              borderTop: overIdx === idx && dragIdx !== null && dragIdx > idx ? '2px solid var(--blue)' : undefined,
-              borderBottom: overIdx === idx && dragIdx !== null && dragIdx < idx ? '2px solid var(--blue)' : undefined,
-              transition: 'opacity 0.15s',
-            }}
-          >
-            {/* Drag handle */}
-            <div
-              className="absolute left-0 top-0 bottom-0 flex items-center pl-1 z-10 cursor-grab active:cursor-grabbing"
-              style={{ width: '20px', touchAction: 'none' }}
-              onTouchStart={handleTouchStart(idx)}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="var(--tx3)" viewBox="0 0 24 24" strokeWidth={2}>
-                <path d="M8 6h.01M8 12h.01M8 18h.01M12 6h.01M12 12h.01M12 18h.01" strokeLinecap="round" />
-              </svg>
-            </div>
-            <div style={{ paddingLeft: '16px' }}>
-              <FieldCard field={field} onClick={() => onFieldClick(field)} />
-            </div>
-          </div>
-        ))}
-      </div>
+      {orderedFields.map((field) => (
+        <FieldCard key={field.id} field={field} onClick={() => onFieldClick(field)} />
+      ))}
     </div>
   );
 }

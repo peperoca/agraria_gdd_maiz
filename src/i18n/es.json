@@ -35,7 +35,9 @@
     "welcomeTitle": "¡Bienvenido! Cree su primera chacra",
     "welcomeDesc": "Una chacra agrupa sus lotes bajo una estación meteorológica. Coloque un pin en el mapa para asignar la estación más cercana.",
     "createFirstFarm": "+ Crear Primera Chacra",
-    "sowed": "Siembra:"
+    "sowed": "Siembra:",
+    "reorderTitle": "Reordenar Lotes",
+    "reorderDone": "Listo"
   },
   "field": {
     "gddUnit": "GDD",
@@ -125,7 +127,8 @@
     "editField": "Editar Lote",
     "editCrop": "Editar Cultivo",
     "fieldSettings": "Config. del Lote",
-    "language": "Idioma"
+    "language": "Idioma",
+    "reorderFields": "Reordenar Lotes"
   },
   "settings": {
     "farmSettings": "Configuración de Chacra",

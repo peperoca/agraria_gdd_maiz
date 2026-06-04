@@ -37,6 +37,7 @@ function App() {
   const [ndviDataForImage, setNdviDataForImage] = useState<import('./types').NdviReading[]>([]);
   const [lastAswMm, setLastAswMm] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [gearOpen, setGearOpen] = useState(false);
   const gearRef = useRef<HTMLDivElement>(null);
@@ -294,6 +295,18 @@ function App() {
                       {t('menu.addField')}
                     </button>
                   )}
+                  {fields.length > 1 && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setReordering(true); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--tx3)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                      {t('menu.reorderFields', { defaultValue: 'Reorder Fields' })}
+                    </button>
+                  )}
                   {currentFarm && canWrite && (
                     <button
                       onClick={() => { setMenuOpen(false); setView('irrigation'); }}
@@ -479,6 +492,8 @@ function App() {
               stationDistanceKm={currentFarm?.stationDistanceKm}
               canWrite={canWrite}
               farmId={currentFarmId ?? undefined}
+              reordering={reordering}
+              onReorderDone={() => setReordering(false)}
             />
           )
         )}
