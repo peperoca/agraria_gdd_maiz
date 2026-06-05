@@ -128,7 +128,8 @@
     "editCrop": "Editar Cultivo",
     "fieldSettings": "Config. del Lote",
     "language": "Idioma",
-    "reorderFields": "Reordenar Lotes"
+    "reorderFields": "Reordenar Lotes",
+    "fieldMap": "Mapa de Lotes"
   },
   "settings": {
     "farmSettings": "Configuración de Chacra",

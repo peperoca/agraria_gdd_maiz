@@ -128,7 +128,8 @@
     "editCrop": "Edit Crop",
     "fieldSettings": "Field Settings",
     "language": "Language",
-    "reorderFields": "Reorder Fields"
+    "reorderFields": "Reorder Fields",
+    "fieldMap": "Field Map"
   },
   "settings": {
     "farmSettings": "Farm Settings",

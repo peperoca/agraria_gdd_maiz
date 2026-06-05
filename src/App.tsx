@@ -14,13 +14,14 @@ import { IrrigationPanel } from './components/IrrigationPanel';
 import { ShareManager } from './components/ShareManager';
 import { SeasonManager } from './components/SeasonManager';
 import { FarmMapView } from './components/FarmMapView';
+import { FieldMapView } from './components/FieldMapView';
 import { useFields } from './hooks/useFields';
 import { useTheme } from './hooks/useTheme';
 import { isLoggedIn, logout, getMe, getStations, getFarms, createFarm, deleteFarm, getFields as apiGetFields, updateField as apiUpdateField, type StationInfo } from './utils/api';
 import type { Field, Farm, User } from './types';
 // CropType now used via FieldFormData
 
-type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm' | 'edit-crop' | 'farm-map';
+type View = 'dashboard' | 'settings' | 'add-field' | 'edit-field' | 'field-detail' | 'admin' | 'add-farm' | 'ndvi-image' | 'irrigation' | 'share-farm' | 'edit-crop' | 'farm-map' | 'field-map';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -213,6 +214,7 @@ function App() {
               else if (view === 'irrigation') setView('dashboard');
               else if (view === 'share-farm') setView('dashboard');
               else if (view === 'farm-map') setView('dashboard');
+              else if (view === 'field-map') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
@@ -305,6 +307,18 @@ function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                       </svg>
                       {t('menu.reorderFields', { defaultValue: 'Reorder Fields' })}
+                    </button>
+                  )}
+                  {fields.length > 0 && (
+                    <button
+                      onClick={() => { setMenuOpen(false); setView('field-map'); }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--tx)' }}
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#10b981' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      {t('menu.fieldMap', { defaultValue: 'Field Map' })}
                     </button>
                   )}
                   {currentFarm && canWrite && (
@@ -443,6 +457,18 @@ function App() {
               setCurrentFarmId(id);
               setSelectedFieldId(null);
               setView('dashboard');
+            }}
+            onBack={() => setView('dashboard')}
+          />
+        )}
+        {view === 'field-map' && (
+          <FieldMapView
+            fields={fields}
+            farmLat={currentFarm?.latitude}
+            farmLng={currentFarm?.longitude}
+            onSelectField={(field) => {
+              setSelectedFieldId(field.id);
+              setView('field-detail');
             }}
             onBack={() => setView('dashboard')}
           />
