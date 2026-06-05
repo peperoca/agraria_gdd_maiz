@@ -202,7 +202,7 @@ function App() {
     <div className="max-w-[600px] mx-auto min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
       <header className="agraria-header flex items-center justify-between sticky top-0 z-10">
-        {view !== 'dashboard' && view !== 'settings' ? (
+        {view !== 'dashboard' ? (
           <button
             onClick={() => {
               if (view === 'ndvi-image') setView('field-detail');
@@ -215,6 +215,7 @@ function App() {
               else if (view === 'share-farm') setView('dashboard');
               else if (view === 'farm-map') setView('dashboard');
               else if (view === 'field-map') setView('dashboard');
+              else if (view === 'settings') setView('dashboard');
               else setView('dashboard');
             }}
             className="text-white/90 hover:text-white flex items-center gap-1 text-sm font-medium"
