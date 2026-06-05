@@ -55,8 +55,9 @@ function get_cdse_token(): ?string {
 }
 
 // ── Step 2: Query Statistical API for a field polygon ──
-function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, string $toDate): ?array {
-    $evalscript = <<<'SCRIPT'
+// Sentinel-2 evalscript (10m, B04/B08/SCL)
+function get_s2_evalscript(): string {
+    return <<<'SCRIPT'
 //VERSION=3
 function setup() {
   return {
@@ -87,6 +88,46 @@ function evaluatePixel(samples) {
   return { ndvi: [NaN], dataMask: [0] };
 }
 SCRIPT;
+}
+
+// Landsat 8/9 evalscript (30m, B04/B05/QA_PIXEL)
+function get_landsat_evalscript(): string {
+    return <<<'SCRIPT'
+//VERSION=3
+function setup() {
+  return {
+    input: [{
+      bands: ["B04", "B05", "QA_PIXEL"],
+      units: "DN"
+    }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1 }
+    ],
+    mosaicking: "ORBIT"
+  };
+}
+
+function evaluatePixel(samples) {
+  for (let i = 0; i < samples.length; i++) {
+    // QA_PIXEL cloud mask: bit 3 = cloud, bit 4 = cloud shadow
+    let qa = samples[i].QA_PIXEL;
+    if ((qa >> 3) & 1 || (qa >> 4) & 1) continue;
+    let nir = samples[i].B05;
+    let red = samples[i].B04;
+    if (nir + red === 0) continue;
+    let ndvi = (nir - red) / (nir + red);
+    return { ndvi: [ndvi], dataMask: [1] };
+  }
+  return { ndvi: [NaN], dataMask: [0] };
+}
+SCRIPT;
+}
+
+function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, string $toDate, string $source = 'sentinel-2-l2a'): ?array {
+    $isLandsat = str_contains($source, 'landsat');
+    $evalscript = $isLandsat ? get_landsat_evalscript() : get_s2_evalscript();
+    $resolution = $isLandsat ? 30 : 10;
 
     $payload = [
         'input' => [
@@ -94,7 +135,7 @@ SCRIPT;
                 'geometry' => $polygon,
             ],
             'data' => [[
-                'type' => 'sentinel-2-l2a',
+                'type' => $source,
                 'dataFilter' => [
                     'timeRange' => [
                         'from' => $fromDate . 'T00:00:00Z',
@@ -112,8 +153,8 @@ SCRIPT;
             ],
             'aggregationInterval' => ['of' => 'P1D'],
             'evalscript' => $evalscript,
-            'resx' => 10,
-            'resy' => 10,
+            'resx' => $resolution,
+            'resy' => $resolution,
         ],
     ];
 
@@ -136,11 +177,52 @@ SCRIPT;
     curl_close($ch);
 
     if ($status !== 200 || !$body) {
-        echo "  Stats API error (HTTP $status): " . substr($body ?: '', 0, 300) . "\n";
+        echo "  Stats API error ($source, HTTP $status): " . substr($body ?: '', 0, 300) . "\n";
         return null;
     }
 
     return json_decode($body, true);
+}
+
+// ── Helper: Process a single NDVI stats entry and upsert ──
+function process_ndvi_entry(array $entry, int $fieldId, string $sowingDate, PDO $db, string $source): ?string {
+    $interval = $entry['interval'] ?? null;
+    $outputs = $entry['outputs'] ?? null;
+    if (!$interval || !$outputs) return null;
+
+    $date = substr($interval['from'] ?? '', 0, 10);
+    if (!$date || $date < $sowingDate) return null;
+
+    $ndviStats = $outputs['ndvi']['bands']['B0']['stats'] ?? null;
+    if (!$ndviStats) return null;
+
+    $sampleCount = $ndviStats['sampleCount'] ?? 0;
+    $noDataCount = $ndviStats['noDataCount'] ?? 0;
+    if ($sampleCount <= 0) return null;
+
+    $ndviMean = (float) ($ndviStats['mean'] ?? 0);
+    $cloudPct = $sampleCount > 0
+        ? round(($noDataCount / ($sampleCount + $noDataCount)) * 100, 2)
+        : null;
+
+    // Skip very cloudy scenes (>50% no-data)
+    if ($cloudPct !== null && $cloudPct > 50) return null;
+
+    // Clamp NDVI to valid range
+    $ndviMean = max(-1, min(1, $ndviMean));
+
+    // Kc = 1.25 * NDVI + 0.20 (Glenn et al.)
+    $kc = round(1.25 * $ndviMean + 0.20, 4);
+    $kc = max(0, min(1.4, $kc)); // Clamp Kc
+
+    // Upsert (scene_id stores the satellite source)
+    $upsertStmt = $db->prepare("
+        INSERT INTO ndvi_readings (field_id, date, ndvi_mean, kc, cloud_pct, scene_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE ndvi_mean = VALUES(ndvi_mean), kc = VALUES(kc), cloud_pct = VALUES(cloud_pct), scene_id = VALUES(scene_id)
+    ");
+    $upsertStmt->execute([$fieldId, $date, $ndviMean, $kc, $cloudPct, $source]);
+    return $date;
 }
 
 // ── Main logic ──
@@ -196,55 +278,47 @@ foreach ($fields as $field) {
         continue;
     }
 
-    $stats = fetch_ndvi_stats($token, $polygon, $fromDate, $toDate);
-    if (!$stats || !isset($stats['data'])) {
-        echo "    No data returned.\n";
-        continue;
-    }
-
+    // ── Fetch Sentinel-2 first ──
+    $s2Dates = [];
+    $stats = fetch_ndvi_stats($token, $polygon, $fromDate, $toDate, 'sentinel-2-l2a');
     $inserted = 0;
-    foreach ($stats['data'] as $entry) {
-        $interval = $entry['interval'] ?? null;
-        $outputs = $entry['outputs'] ?? null;
-        if (!$interval || !$outputs) continue;
 
-        $date = substr($interval['from'] ?? '', 0, 10);
-        if (!$date || $date < $sowingDate) continue;
+    if ($stats && isset($stats['data'])) {
+        foreach ($stats['data'] as $entry) {
+            $result = process_ndvi_entry($entry, $fieldId, $sowingDate, $db, 'sentinel-2');
+            if ($result) {
+                $s2Dates[] = $result;
+                $inserted++;
+            }
+        }
+    }
+    echo "    Sentinel-2: $inserted readings.\n";
 
-        $ndviStats = $outputs['ndvi']['bands']['B0']['stats'] ?? null;
-        if (!$ndviStats) continue;
+    // ── Fill gaps with Landsat 8/9 ──
+    // Only query Landsat if there's a gap > 7 days between last reading and today
+    $lastReadingDate = !empty($s2Dates) ? max($s2Dates) : $fromDate;
+    $daysSinceLast = (int) ((strtotime($toDate) - strtotime($lastReadingDate)) / 86400);
 
-        $sampleCount = $ndviStats['sampleCount'] ?? 0;
-        $noDataCount = $ndviStats['noDataCount'] ?? 0;
-        if ($sampleCount <= 0) continue;
+    $landsatInserted = 0;
+    if ($daysSinceLast > 7) {
+        $landsatFrom = $lastReadingDate; // Start from where S2 left off
+        echo "    Gap detected ({$daysSinceLast}d since last S2). Trying Landsat...\n";
 
-        $ndviMean = (float) ($ndviStats['mean'] ?? 0);
-        $cloudPct = $sampleCount > 0
-            ? round(($noDataCount / ($sampleCount + $noDataCount)) * 100, 2)
-            : null;
-
-        // Skip very cloudy scenes (>50% no-data)
-        if ($cloudPct !== null && $cloudPct > 50) continue;
-
-        // Clamp NDVI to valid range
-        $ndviMean = max(-1, min(1, $ndviMean));
-
-        // Kc = 1.25 * NDVI + 0.20 (Glenn et al.)
-        $kc = round(1.25 * $ndviMean + 0.20, 4);
-        $kc = max(0, min(1.4, $kc)); // Clamp Kc
-
-        // Upsert
-        $upsertStmt = $db->prepare("
-            INSERT INTO ndvi_readings (field_id, date, ndvi_mean, kc, cloud_pct)
-            VALUES (?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE ndvi_mean = VALUES(ndvi_mean), kc = VALUES(kc), cloud_pct = VALUES(cloud_pct)
-        ");
-        $upsertStmt->execute([$fieldId, $date, $ndviMean, $kc, $cloudPct]);
-        $inserted++;
+        $lsStats = fetch_ndvi_stats($token, $polygon, $landsatFrom, $toDate, 'landsat-ot-l2');
+        if ($lsStats && isset($lsStats['data'])) {
+            foreach ($lsStats['data'] as $entry) {
+                $date = substr($entry['interval']['from'] ?? '', 0, 10);
+                // Only insert Landsat if we don't already have S2 for that date
+                if ($date && !in_array($date, $s2Dates)) {
+                    $result = process_ndvi_entry($entry, $fieldId, $sowingDate, $db, 'landsat');
+                    if ($result) $landsatInserted++;
+                }
+            }
+        }
+        echo "    Landsat: $landsatInserted readings.\n";
     }
 
-    echo "    Inserted/updated $inserted NDVI readings.\n";
-    $totalInserted += $inserted;
+    $totalInserted += $inserted + $landsatInserted;
 
     // Rate limit
     usleep(500000); // 0.5s between fields
