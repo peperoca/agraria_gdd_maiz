@@ -25,6 +25,9 @@ export interface Field {
   previousStationMac?: string | null;
   previousStationName?: string | null;
   stationChangedAt?: string | null;  // YYYY-MM-DD
+  // Notes
+  notes?: string | null;
+  notesUpdatedAt?: string | null;
 }
 
 export interface Season {

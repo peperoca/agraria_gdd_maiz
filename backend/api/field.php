@@ -25,7 +25,8 @@ $stmt = $db->prepare("
            f.coneat_gc AS coneatGc, f.initial_asw_mm AS initialAswMm,
            f.previous_station_mac AS previousStationMac,
            f.station_changed_at AS stationChangedAt,
-           ps.name AS previousStationName
+           ps.name AS previousStationName,
+           f.notes, f.notes_updated_at AS notesUpdatedAt
     FROM fields f
     LEFT JOIN stations ps ON ps.mac = f.previous_station_mac
     WHERE f.id = ? AND f.user_id = ?
@@ -83,16 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         ? $body['createdAt']
         : null;
 
-    $stmt = $db->prepare("
-        UPDATE fields
-        SET name = ?, sowing_date = ?, crop_type = ?, polygon = ?,
-            taw_mm = ?, mad_pct = ?, taw_source = ?, coneat_gc = ?, initial_asw_mm = ?
-            " . ($createdAt ? ", created_at = ?" : "") . "
-        WHERE id = ?
-    ");
+    // Notes
+    $notes = array_key_exists('notes', $body) ? $body['notes'] : null;
+    $notesChanged = array_key_exists('notes', $body);
+
+    $sql = "UPDATE fields SET name = ?, sowing_date = ?, crop_type = ?, polygon = ?,
+            taw_mm = ?, mad_pct = ?, taw_source = ?, coneat_gc = ?, initial_asw_mm = ?";
     $params = [$name, $sowingDate, $cropType, $polygon, $tawMm, $madPct, $tawSource, $coneatGc, $initialAswMm];
-    if ($createdAt) $params[] = $createdAt;
+
+    if ($createdAt) { $sql .= ", created_at = ?"; $params[] = $createdAt; }
+    if ($notesChanged) { $sql .= ", notes = ?, notes_updated_at = NOW()"; $params[] = $notes; }
+
+    $sql .= " WHERE id = ?";
     $params[] = $fieldId;
+
+    $stmt = $db->prepare($sql);
     $stmt->execute($params);
 
     $finalCreatedAt = $createdAt ?? $field['createdAt'];
@@ -111,6 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         'tawSource' => $tawSource,
         'coneatGc' => $coneatGc,
         'initialAswMm' => $initialAswMm,
+        'notes' => $notesChanged ? $notes : $field['notes'],
+        'notesUpdatedAt' => $notesChanged ? date('Y-m-d H:i:s') : $field['notesUpdatedAt'],
     ]);
 }
 

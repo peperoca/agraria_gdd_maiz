@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                    s.end_date AS seasonEndDate,
                    f.previous_station_mac AS previousStationMac,
                    f.station_changed_at AS stationChangedAt,
-                   ps.name AS previousStationName
+                   ps.name AS previousStationName,
+                   f.notes, f.notes_updated_at AS notesUpdatedAt
             FROM fields f
             LEFT JOIN seasons s ON s.field_id = f.id AND s.is_active = 1
             LEFT JOIN stations ps ON ps.mac = f.previous_station_mac

@@ -177,6 +177,9 @@ export interface ServerField {
   previousStationMac?: string | null;
   previousStationName?: string | null;
   stationChangedAt?: string | null;
+  // Notes
+  notes?: string | null;
+  notesUpdatedAt?: string | null;
 }
 
 export async function getFields(farmId?: number): Promise<ServerField[]> {
@@ -202,6 +205,7 @@ export async function updateField(id: number, data: {
   tawSource?: string | null; coneatGc?: string | null;
   initialAswMm?: number | null;
   createdAt?: string;
+  notes?: string | null;
 }): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'PUT',
@@ -213,6 +217,38 @@ export async function deleteField(id: number): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'DELETE',
   });
+}
+
+// --- Field Photos ---
+export interface FieldPhoto {
+  id: number;
+  filename: string;
+  url: string;
+  caption: string | null;
+  createdAt: string;
+}
+
+export async function getFieldPhotos(fieldId: number): Promise<FieldPhoto[]> {
+  return apiFetch(`field-photos.php?field_id=${fieldId}`);
+}
+
+export async function uploadFieldPhotos(fieldId: number, files: File[], caption?: string): Promise<{ uploaded: FieldPhoto[]; count: number }> {
+  const token = getToken();
+  const formData = new FormData();
+  files.forEach((file) => formData.append('photos[]', file));
+  if (caption) formData.append('caption', caption);
+
+  const res = await fetch(`${API_BASE}/field-photos.php?field_id=${fieldId}`, {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteFieldPhoto(photoId: number): Promise<{ success: boolean }> {
+  return apiFetch(`field-photos.php?id=${photoId}`, { method: 'DELETE' });
 }
 
 // --- Weather Data ---

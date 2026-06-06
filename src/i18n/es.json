@@ -62,7 +62,14 @@
     "kcNonlinear": "No lineal",
     "kcLinearDesc": "Activa: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)",
     "kcNonlinearDesc": "Activa: Fórmula Kc no lineal (Glenn et al. 2011)",
-    "kcChartNote": "Ambas curvas se muestran en el gráfico. El selector define cuál calcula ETc/balance hídrico."
+    "kcChartNote": "Ambas curvas se muestran en el gráfico. El selector define cuál calcula ETc/balance hídrico.",
+    "notes": "Notas",
+    "notesSaving": "Guardando...",
+    "notesSaved": "Guardado",
+    "notesPlaceholder": "Agregar notas del campo...",
+    "photos": "Fotos",
+    "addPhoto": "Agregar Foto",
+    "noPhotos": "Sin fotos aún"
   },
   "fieldForm": {
     "newField": "Nuevo Lote",

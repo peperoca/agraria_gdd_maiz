@@ -35,6 +35,8 @@ export function useFields(farmId?: number | null) {
           previousStationMac: f.previousStationMac ?? null,
           previousStationName: f.previousStationName ?? null,
           stationChangedAt: f.stationChangedAt ?? null,
+          notes: f.notes ?? null,
+          notesUpdatedAt: f.notesUpdatedAt ?? null,
         }))
       );
     } catch (err) {

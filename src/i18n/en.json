@@ -62,7 +62,14 @@
     "kcNonlinear": "Non-linear",
     "kcLinearDesc": "Active: Kc = 1.25 × NDVI + 0.20 (Glenn et al.)",
     "kcNonlinearDesc": "Active: Non-linear Kc formula (Glenn et al. 2011)",
-    "kcChartNote": "Both curves shown on chart. Toggle selects which drives ETc/water balance."
+    "kcChartNote": "Both curves shown on chart. Toggle selects which drives ETc/water balance.",
+    "notes": "Notes",
+    "notesSaving": "Saving...",
+    "notesSaved": "Saved",
+    "notesPlaceholder": "Add field notes...",
+    "photos": "Photos",
+    "addPhoto": "Add Photo",
+    "noPhotos": "No photos yet"
   },
   "fieldForm": {
     "newField": "New Field",
