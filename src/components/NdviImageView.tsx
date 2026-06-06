@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO } from 'date-fns';
-import type { NdviReading } from '../types';
+import type { NdviReading, FieldPolygon } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://www.valleychaco.com.py/gdd-api/api';
 
@@ -14,10 +14,11 @@ interface NdviImageViewProps {
   fieldName: string;
   ndviData: NdviReading[];
   initialDate?: string;
+  polygon?: FieldPolygon | null;
   onBack: () => void;
 }
 
-export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBack }: NdviImageViewProps) {
+export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, polygon, onBack }: NdviImageViewProps) {
   const { t } = useTranslation();
   const sorted = [...ndviData].sort((a, b) => a.date.localeCompare(b.date));
   const [selectedDate, setSelectedDate] = useState(initialDate || (sorted.length > 0 ? sorted[sorted.length - 1].date : ''));
@@ -27,6 +28,30 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
   const [error, setError] = useState<string | null>(null);
 
   const selectedReading = sorted.find((r) => r.date === selectedDate);
+
+  // Compute SVG polygon overlay (maps GeoJSON coords to % of image using same bbox+padding as backend)
+  const svgPolygonPoints = useMemo(() => {
+    if (!polygon?.coordinates?.[0]) return null;
+    const coords = polygon.coordinates[0]; // [lng, lat][]
+    const lngs = coords.map((c) => c[0]);
+    const lats = coords.map((c) => c[1]);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    // 10% padding (same as backend)
+    const lngPad = (maxLng - minLng) * 0.1;
+    const latPad = (maxLat - minLat) * 0.1;
+    const bboxMinLng = minLng - lngPad, bboxMaxLng = maxLng + lngPad;
+    const bboxMinLat = minLat - latPad, bboxMaxLat = maxLat + latPad;
+    const bboxW = bboxMaxLng - bboxMinLng;
+    const bboxH = bboxMaxLat - bboxMinLat;
+    if (bboxW === 0 || bboxH === 0) return null;
+    // Map each coord to % position in the image
+    return coords.map(([lng, lat]) => {
+      const x = ((lng - bboxMinLng) / bboxW) * 100;
+      const y = ((bboxMaxLat - lat) / bboxH) * 100; // Y is inverted (top = maxLat)
+      return `${x},${y}`;
+    }).join(' ');
+  }, [polygon]);
 
   useEffect(() => {
     if (!selectedDate) return;
@@ -189,12 +214,26 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
       {!loading && trueColorUrl && (
         <div className="agraria-card">
           <div className="sec-label">{t('ndviImage.trueColor')}</div>
-          <img
-            src={trueColorUrl}
-            alt="True color satellite"
-            className="w-full rounded-[var(--r)] border"
-            style={{ borderColor: 'var(--bdr)' }}
-          />
+          <div className="relative">
+            <img
+              src={trueColorUrl}
+              alt="True color satellite"
+              className="w-full rounded-[var(--r)] border"
+              style={{ borderColor: 'var(--bdr)' }}
+            />
+            {svgPolygonPoints && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polygon
+                  points={svgPolygonPoints}
+                  fill="none"
+                  stroke="#ff3300"
+                  strokeWidth="0.5"
+                  strokeDasharray="1.5,1"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+            )}
+          </div>
           <p className="text-[10px] mt-1.5" style={{ color: 'var(--tx3)' }}>
             {t('ndviImage.trueColorCaption', { date: format(parseISO(selectedDate), 'MMMM d, yyyy') })}
           </p>
@@ -204,12 +243,26 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, onBac
       {!loading && ndviUrl && (
         <div className="agraria-card">
           <div className="sec-label">{t('ndviImage.ndviVegetation')}</div>
-          <img
-            src={ndviUrl}
-            alt="NDVI visualization"
-            className="w-full rounded-[var(--r)] border"
-            style={{ borderColor: 'var(--bdr)' }}
-          />
+          <div className="relative">
+            <img
+              src={ndviUrl}
+              alt="NDVI visualization"
+              className="w-full rounded-[var(--r)] border"
+              style={{ borderColor: 'var(--bdr)' }}
+            />
+            {svgPolygonPoints && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polygon
+                  points={svgPolygonPoints}
+                  fill="none"
+                  stroke="#ff3300"
+                  strokeWidth="0.5"
+                  strokeDasharray="1.5,1"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+            )}
+          </div>
           {/* Legend */}
           <div className="flex items-center gap-1 mt-2">
             <span className="text-[9px]" style={{ color: 'var(--tx3)' }}>{t('ndviImage.legendLow')}</span>

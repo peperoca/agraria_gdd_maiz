@@ -569,6 +569,7 @@ function App() {
             fieldName={selectedField.name}
             ndviData={ndviDataForImage}
             initialDate={ndviImageDate}
+            polygon={selectedField.polygon}
             onBack={() => setView('field-detail')}
           />
         )}
