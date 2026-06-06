@@ -30,14 +30,14 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, polyg
   const selectedReading = sorted.find((r) => r.date === selectedDate);
 
   // Compute SVG polygon overlay (maps GeoJSON coords to % of image using same bbox+padding as backend)
-  const svgPolygonPoints = useMemo(() => {
+  const svgOverlay = useMemo(() => {
     if (!polygon?.coordinates?.[0]) return null;
     const coords = polygon.coordinates[0]; // [lng, lat][]
     const lngs = coords.map((c) => c[0]);
     const lats = coords.map((c) => c[1]);
     const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
     const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    // 10% padding (same as backend)
+    // 10% padding (same as backend ndvi-image.php)
     const lngPad = (maxLng - minLng) * 0.1;
     const latPad = (maxLat - minLat) * 0.1;
     const bboxMinLng = minLng - lngPad, bboxMaxLng = maxLng + lngPad;
@@ -45,12 +45,21 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, polyg
     const bboxW = bboxMaxLng - bboxMinLng;
     const bboxH = bboxMaxLat - bboxMinLat;
     if (bboxW === 0 || bboxH === 0) return null;
-    // Map each coord to % position in the image
-    return coords.map(([lng, lat]) => {
-      const x = ((lng - bboxMinLng) / bboxW) * 100;
-      const y = ((bboxMaxLat - lat) / bboxH) * 100; // Y is inverted (top = maxLat)
-      return `${x},${y}`;
-    }).join(' ');
+
+    // Build SVG path in percentage coordinates
+    const points = coords.map(([lng, lat]) => {
+      const xPct = ((lng - bboxMinLng) / bboxW) * 100;
+      const yPct = ((bboxMaxLat - lat) / bboxH) * 100;
+      return [xPct, yPct] as [number, number];
+    });
+
+    // Build SVG path string using percentages mapped to a 1000x1000 viewBox for precision
+    const scale = 10; // multiply pct by 10 to get 0-1000 range
+    const pathD = points.map(([x, y], i) =>
+      `${i === 0 ? 'M' : 'L'}${(x * scale).toFixed(1)},${(y * scale).toFixed(1)}`
+    ).join(' ') + ' Z';
+
+    return pathD;
   }, [polygon]);
 
   useEffect(() => {
@@ -221,14 +230,14 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, polyg
               className="w-full rounded-[var(--r)] border"
               style={{ borderColor: 'var(--bdr)' }}
             />
-            {svgPolygonPoints && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polygon
-                  points={svgPolygonPoints}
-                  fill="none"
+            {svgOverlay && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                <path
+                  d={svgOverlay}
+                  fill="rgba(255, 51, 0, 0.08)"
                   stroke="#ff3300"
-                  strokeWidth="0.5"
-                  strokeDasharray="1.5,1"
+                  strokeWidth="3"
+                  strokeDasharray="8,4"
                   vectorEffect="non-scaling-stroke"
                 />
               </svg>
@@ -250,14 +259,14 @@ export function NdviImageView({ fieldId, fieldName, ndviData, initialDate, polyg
               className="w-full rounded-[var(--r)] border"
               style={{ borderColor: 'var(--bdr)' }}
             />
-            {svgPolygonPoints && (
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polygon
-                  points={svgPolygonPoints}
-                  fill="none"
+            {svgOverlay && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                <path
+                  d={svgOverlay}
+                  fill="rgba(255, 51, 0, 0.08)"
                   stroke="#ff3300"
-                  strokeWidth="0.5"
-                  strokeDasharray="1.5,1"
+                  strokeWidth="3"
+                  strokeDasharray="8,4"
                   vectorEffect="non-scaling-stroke"
                 />
               </svg>
