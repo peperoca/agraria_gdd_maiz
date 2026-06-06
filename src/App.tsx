@@ -144,13 +144,14 @@ function App() {
         cropType: data.cropType,
         polygon: data.polygon,
       });
-      // Update soil params separately if provided
+      // Update soil params + createdAt separately if provided
       await apiUpdateField(selectedFieldId, {
         tawMm: data.tawMm,
         madPct: data.madPct,
         tawSource: data.tawSource,
         coneatGc: data.coneatGc,
         initialAswMm: data.initialAswMm,
+        ...(data.createdAt ? { createdAt: data.createdAt } : {}),
       });
       await refresh();
       setView('field-detail');

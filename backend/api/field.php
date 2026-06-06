@@ -78,13 +78,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $tawSource = null;
     }
 
+    // Allow overriding created_at
+    $createdAt = array_key_exists('createdAt', $body) && preg_match('/^\d{4}-\d{2}-\d{2}/', $body['createdAt'])
+        ? $body['createdAt']
+        : null;
+
     $stmt = $db->prepare("
         UPDATE fields
         SET name = ?, sowing_date = ?, crop_type = ?, polygon = ?,
             taw_mm = ?, mad_pct = ?, taw_source = ?, coneat_gc = ?, initial_asw_mm = ?
+            " . ($createdAt ? ", created_at = ?" : "") . "
         WHERE id = ?
     ");
-    $stmt->execute([$name, $sowingDate, $cropType, $polygon, $tawMm, $madPct, $tawSource, $coneatGc, $initialAswMm, $fieldId]);
+    $params = [$name, $sowingDate, $cropType, $polygon, $tawMm, $madPct, $tawSource, $coneatGc, $initialAswMm];
+    if ($createdAt) $params[] = $createdAt;
+    $params[] = $fieldId;
+    $stmt->execute($params);
+
+    $finalCreatedAt = $createdAt ?? $field['createdAt'];
 
     json_response([
         'id' => $fieldId,
@@ -94,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         'polygon' => $polygon ? json_decode($polygon, true) : null,
         'stationMac' => $field['stationMac'],
         'farmId' => $field['farmId'],
-        'createdAt' => $field['createdAt'],
+        'createdAt' => $finalCreatedAt,
         'tawMm' => $tawMm,
         'madPct' => $madPct,
         'tawSource' => $tawSource,

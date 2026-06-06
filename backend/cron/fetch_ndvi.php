@@ -90,44 +90,9 @@ function evaluatePixel(samples) {
 SCRIPT;
 }
 
-// Landsat 8/9 evalscript (30m, B04/B05/QA_PIXEL)
-function get_landsat_evalscript(): string {
-    return <<<'SCRIPT'
-//VERSION=3
-function setup() {
-  return {
-    input: [{
-      bands: ["B04", "B05", "QA_PIXEL"],
-      units: "DN"
-    }],
-    output: [
-      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
-      { id: "dataMask", bands: 1 }
-    ],
-    mosaicking: "ORBIT"
-  };
-}
-
-function evaluatePixel(samples) {
-  for (let i = 0; i < samples.length; i++) {
-    // QA_PIXEL cloud mask: bit 3 = cloud, bit 4 = cloud shadow
-    let qa = samples[i].QA_PIXEL;
-    if ((qa >> 3) & 1 || (qa >> 4) & 1) continue;
-    let nir = samples[i].B05;
-    let red = samples[i].B04;
-    if (nir + red === 0) continue;
-    let ndvi = (nir - red) / (nir + red);
-    return { ndvi: [ndvi], dataMask: [1] };
-  }
-  return { ndvi: [NaN], dataMask: [0] };
-}
-SCRIPT;
-}
-
-function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, string $toDate, string $source = 'sentinel-2-l2a'): ?array {
-    $isLandsat = str_contains($source, 'landsat');
-    $evalscript = $isLandsat ? get_landsat_evalscript() : get_s2_evalscript();
-    $resolution = $isLandsat ? 30 : 10;
+function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, string $toDate): ?array {
+    $evalscript = get_s2_evalscript();
+    $resolution = 10;
 
     $payload = [
         'input' => [
@@ -135,7 +100,7 @@ function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, strin
                 'geometry' => $polygon,
             ],
             'data' => [[
-                'type' => $source,
+                'type' => 'sentinel-2-l2a',
                 'dataFilter' => [
                     'timeRange' => [
                         'from' => $fromDate . 'T00:00:00Z',
@@ -177,7 +142,7 @@ function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, strin
     curl_close($ch);
 
     if ($status !== 200 || !$body) {
-        echo "  Stats API error ($source, HTTP $status): " . substr($body ?: '', 0, 300) . "\n";
+        echo "  Stats API error (HTTP $status): " . substr($body ?: '', 0, 300) . "\n";
         return null;
     }
 
@@ -251,6 +216,7 @@ if (!$token) {
 echo "Got CDSE access token.\n";
 
 $totalInserted = 0;
+$requestCount = 0;
 
 foreach ($fields as $field) {
     $fieldId = (int) $field['id'];
@@ -260,6 +226,16 @@ foreach ($fields as $field) {
     if (!$polygon || !isset($polygon['coordinates'])) {
         echo "  Field $fieldId: invalid polygon, skipping.\n";
         continue;
+    }
+
+    // Refresh token every 8 fields to avoid expiry
+    if (++$requestCount % 8 === 0) {
+        echo "  Refreshing CDSE token...\n";
+        $token = get_cdse_token();
+        if (!$token) {
+            echo "  Token refresh failed, stopping.\n";
+            break;
+        }
     }
 
     echo "  Field $fieldId: fetching NDVI since $sowingDate...\n";
@@ -278,50 +254,31 @@ foreach ($fields as $field) {
         continue;
     }
 
-    // ── Fetch Sentinel-2 first ──
-    $s2Dates = [];
-    $stats = fetch_ndvi_stats($token, $polygon, $fromDate, $toDate, 'sentinel-2-l2a');
+    // ── Fetch Sentinel-2 in chunks (max 30 days per request) ──
+    $maxDays = 30;
+    $currentFrom = $fromDate;
     $inserted = 0;
 
-    if ($stats && isset($stats['data'])) {
-        foreach ($stats['data'] as $entry) {
-            $result = process_ndvi_entry($entry, $fieldId, $sowingDate, $db, 'sentinel-2');
-            if ($result) {
-                $s2Dates[] = $result;
-                $inserted++;
+    while ($currentFrom < $toDate) {
+        $currentTo = date('Y-m-d', min(strtotime("$currentFrom +{$maxDays} days"), strtotime($toDate)));
+
+        $stats = fetch_ndvi_stats($token, $polygon, $currentFrom, $currentTo);
+        if ($stats && isset($stats['data'])) {
+            foreach ($stats['data'] as $entry) {
+                $result = process_ndvi_entry($entry, $fieldId, $sowingDate, $db, 'sentinel-2');
+                if ($result) $inserted++;
             }
         }
+
+        $currentFrom = $currentTo;
+        if ($currentFrom < $toDate) usleep(1000000); // 1s between chunks
     }
+
     echo "    Sentinel-2: $inserted readings.\n";
+    $totalInserted += $inserted;
 
-    // ── Fill gaps with Landsat 8/9 ──
-    // Only query Landsat if there's a gap > 7 days between last reading and today
-    $lastReadingDate = !empty($s2Dates) ? max($s2Dates) : $fromDate;
-    $daysSinceLast = (int) ((strtotime($toDate) - strtotime($lastReadingDate)) / 86400);
-
-    $landsatInserted = 0;
-    if ($daysSinceLast > 7) {
-        $landsatFrom = $lastReadingDate; // Start from where S2 left off
-        echo "    Gap detected ({$daysSinceLast}d since last S2). Trying Landsat...\n";
-
-        $lsStats = fetch_ndvi_stats($token, $polygon, $landsatFrom, $toDate, 'landsat-ot-l2');
-        if ($lsStats && isset($lsStats['data'])) {
-            foreach ($lsStats['data'] as $entry) {
-                $date = substr($entry['interval']['from'] ?? '', 0, 10);
-                // Only insert Landsat if we don't already have S2 for that date
-                if ($date && !in_array($date, $s2Dates)) {
-                    $result = process_ndvi_entry($entry, $fieldId, $sowingDate, $db, 'landsat');
-                    if ($result) $landsatInserted++;
-                }
-            }
-        }
-        echo "    Landsat: $landsatInserted readings.\n";
-    }
-
-    $totalInserted += $inserted + $landsatInserted;
-
-    // Rate limit
-    usleep(500000); // 0.5s between fields
+    // Rate limit: 2s between fields
+    usleep(2000000);
 }
 
 echo "Done. Total NDVI readings processed: $totalInserted\n";

@@ -201,6 +201,7 @@ export async function updateField(id: number, data: {
   tawMm?: number | null; madPct?: number | null;
   tawSource?: string | null; coneatGc?: string | null;
   initialAswMm?: number | null;
+  createdAt?: string;
 }): Promise<{ success: boolean }> {
   return apiFetch(`field.php?id=${id}`, {
     method: 'PUT',

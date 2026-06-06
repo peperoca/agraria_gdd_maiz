@@ -22,6 +22,8 @@ export interface FieldFormData {
   tawSource?: 'coneat_mm' | 'coneat_apdn' | 'manual' | null;
   coneatGc?: string | null;
   initialAswMm?: number | null;
+  // Creation date override
+  createdAt?: string | null;
 }
 
 interface FieldFormProps {
@@ -56,6 +58,11 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel, onDelet
   const [coneatGc, setConeatGc] = useState<string | null>(field?.coneatGc ?? null);
   const [initialAswMm, setInitialAswMm] = useState<string>(field?.initialAswMm != null ? String(field.initialAswMm) : '');
 
+  // Creation date (editable in edit mode)
+  const [createdAt, setCreatedAt] = useState<string>(
+    field?.createdAt ? field.createdAt.substring(0, 10) : ''
+  );
+
   // CONEAT intersection
   const [coneatMatches, setConeatMatches] = useState<ConeatMatch[] | null>(null);
   const [coneatLoading, setConeatLoading] = useState(false);
@@ -81,6 +88,7 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel, onDelet
       tawSource,
       coneatGc,
       initialAswMm: initialAswMm ? parseFloat(initialAswMm) : (taw ?? null),
+      createdAt: isEditing && createdAt ? createdAt : null,
     });
   };
 
@@ -223,12 +231,15 @@ export function FieldForm({ field, farmLat, farmLng, onSubmit, onCancel, onDelet
           </>
         )}
 
-        {isEditing && field?.createdAt && (
+        {isEditing && (
           <div className="flex flex-col gap-1">
             <label className="text-xs" style={{ color: 'var(--tx2)' }}>{t('fieldForm.creationDate')}</label>
-            <div className="text-xs py-2 px-3 rounded-[var(--r)]" style={{ background: 'var(--surface2)', color: 'var(--tx)' }}>
-              {new Date(field.createdAt).toLocaleDateString()}
-            </div>
+            <input
+              type="date"
+              value={createdAt}
+              onChange={(e) => setCreatedAt(e.target.value)}
+              className="agraria-input"
+            />
           </div>
         )}
 
