@@ -486,8 +486,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
             </div>
             <p className="text-[9px] mt-1.5" style={{ color: 'var(--tx3)' }}>
               {kcFormula === 'linear'
-                ? t('field.kcLinearDesc')
-                : t('field.kcNonlinearDesc')
+                ? `Kc = ${cropConfig.linearSlope} × NDVI ${cropConfig.linearIntercept >= 0 ? '+' : '−'} ${Math.abs(cropConfig.linearIntercept).toFixed(2)}`
+                : `Kc = ${cropConfig.kcMin} + ${(cropConfig.kcMax - cropConfig.kcMin).toFixed(2)} × [(NDVI − 0.15) / (${cropConfig.ndviMax} − 0.15)]`
               }
             </p>
           </div>

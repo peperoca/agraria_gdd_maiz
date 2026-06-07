@@ -33,7 +33,8 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
   const green = '#2d8a4e';
-  const orange = styles.getPropertyValue('--orange').trim() || '#D97706';
+  const linearColor = styles.getPropertyValue('--orange').trim() || '#D97706';
+  const nonlinearColor = '#7C3AED'; // purple for non-linear
 
   const sorted = useMemo(() => [...data].sort((a, b) => a.date.localeCompare(b.date)), [data]);
   const altSorted = useMemo(
@@ -57,6 +58,8 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
 
   const activeLabel = activeFormula === 'nonlinear' ? t('charts.kcNonlinearLabel') : t('charts.kcLinearLabel');
   const altLabel = activeFormula === 'nonlinear' ? t('charts.kcLinearLabel') : t('charts.kcNonlinearLabel');
+  const activeColor = activeFormula === 'nonlinear' ? nonlinearColor : linearColor;
+  const altColor = activeFormula === 'nonlinear' ? linearColor : nonlinearColor;
   const faoColor = '#888888';
 
   const chartData = useMemo(() => {
@@ -76,7 +79,7 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       {
         label: activeLabel,
         data: sorted.map((d) => d.kc),
-        borderColor: orange,
+        borderColor: activeColor,
         backgroundColor: 'transparent',
         borderWidth: 2,
         tension: 0.3,
@@ -87,7 +90,7 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       ...(altSorted ? [{
         label: altLabel,
         data: altSorted.map((d) => d.kc),
-        borderColor: orange,
+        borderColor: altColor,
         backgroundColor: 'transparent',
         borderWidth: 1.5,
         borderDash: [5, 3] as number[],
@@ -110,7 +113,7 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       }] : []),
     ];
     return { labels: sorted.map((d) => format(parseISO(d.date), 'MMM d')), datasets };
-  }, [sorted, altSorted, faoKcData, green, orange, faoColor, activeLabel, altLabel, t]);
+  }, [sorted, altSorted, faoKcData, green, activeColor, altColor, faoColor, activeLabel, altLabel, t]);
 
   const options: ChartOptions<'line'> = {
     responsive: true,
@@ -154,8 +157,8 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       },
       yKc: {
         position: 'right',
-        title: { display: true, text: t('charts.kcAxis'), font: { size: 10 }, color: orange },
-        ticks: { font: { size: 9 }, color: orange },
+        title: { display: true, text: t('charts.kcAxis'), font: { size: 10 }, color: tx3 },
+        ticks: { font: { size: 9 }, color: tx3 },
         grid: { display: false },
         min: 0,
         max: 1.5,
