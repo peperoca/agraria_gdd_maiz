@@ -67,6 +67,7 @@ function setup() {
     }],
     output: [
       { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "cloud", bands: 1, sampleType: "FLOAT32" },
       { id: "dataMask", bands: 1 }
     ],
     mosaicking: "SIMPLE"
@@ -74,19 +75,22 @@ function setup() {
 }
 
 function evaluatePixel(sample) {
-  // Cloud/shadow mask using SCL band
-  // SCL: 0=no data, 1=saturated, 3=cloud shadow, 8=cloud med, 9=cloud high, 10=cirrus, 11=snow
   let scl = sample.SCL;
+  // Actual cloud pixels: 8=cloud med, 9=cloud high, 10=cirrus
+  let isCloud = (scl === 8 || scl === 9 || scl === 10) ? 1 : 0;
+
+  // Mask bad pixels for NDVI using NaN (dataMask stays 1 so cloud band is always counted)
+  // SCL: 0=no data, 1=saturated, 3=cloud shadow, 8=cloud med, 9=cloud high, 10=cirrus, 11=snow
   if (scl === 0 || scl === 1 || scl === 3 || scl === 8 || scl === 9 || scl === 10 || scl === 11) {
-    return { ndvi: [NaN], dataMask: [0] };
+    return { ndvi: [NaN], cloud: [isCloud], dataMask: [1] };
   }
   let nir = sample.B08;
   let red = sample.B04;
   if (nir + red === 0) {
-    return { ndvi: [NaN], dataMask: [0] };
+    return { ndvi: [NaN], cloud: [0], dataMask: [1] };
   }
   let ndvi = (nir - red) / (nir + red);
-  return { ndvi: [ndvi], dataMask: [1] };
+  return { ndvi: [ndvi], cloud: [isCloud], dataMask: [1] };
 }
 SCRIPT;
 }
@@ -171,12 +175,16 @@ function process_ndvi_entry(array $entry, int $fieldId, string $sowingDate, PDO 
     if ($sampleCount <= 0) return null;
 
     $ndviMean = (float) ($ndviStats['mean'] ?? 0);
-    $cloudPct = $sampleCount > 0
-        ? round(($noDataCount / ($sampleCount + $noDataCount)) * 100, 2)
-        : null;
 
-    // Skip very cloudy scenes (>50% no-data)
-    if ($cloudPct !== null && $cloudPct > 50) return null;
+    // Cloud % from dedicated cloud band (only SCL 8/9/10 = actual clouds)
+    $cloudStats = $outputs['cloud']['bands']['B0']['stats'] ?? null;
+    $cloudPct = $cloudStats ? round(((float) ($cloudStats['mean'] ?? 0)) * 100, 2) : null;
+
+    // Skip scenes where >50% of pixels are masked (clouds + shadows + no-data)
+    $maskedPct = ($sampleCount + $noDataCount) > 0
+        ? ($noDataCount / ($sampleCount + $noDataCount)) * 100
+        : 0;
+    if ($maskedPct > 50) return null;
 
     // Clamp NDVI to valid range
     $ndviMean = max(-1, min(1, $ndviMean));
