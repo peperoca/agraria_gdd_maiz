@@ -57,7 +57,6 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
 
   const activeLabel = activeFormula === 'nonlinear' ? t('charts.kcNonlinearLabel') : t('charts.kcLinearLabel');
   const altLabel = activeFormula === 'nonlinear' ? t('charts.kcLinearLabel') : t('charts.kcNonlinearLabel');
-  const purple = '#7c3aed';
   const faoColor = '#888888';
 
   const chartData = useMemo(() => {
@@ -88,7 +87,7 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       ...(altSorted ? [{
         label: altLabel,
         data: altSorted.map((d) => d.kc),
-        borderColor: purple,
+        borderColor: orange,
         backgroundColor: 'transparent',
         borderWidth: 1.5,
         borderDash: [5, 3] as number[],
@@ -111,7 +110,7 @@ export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig,
       }] : []),
     ];
     return { labels: sorted.map((d) => format(parseISO(d.date), 'MMM d')), datasets };
-  }, [sorted, altSorted, faoKcData, green, orange, purple, faoColor, activeLabel, altLabel, t]);
+  }, [sorted, altSorted, faoKcData, green, orange, faoColor, activeLabel, altLabel, t]);
 
   const options: ChartOptions<'line'> = {
     responsive: true,

@@ -9,19 +9,24 @@ export interface KcParams {
   kcMax: number;
   kcMin: number;
   ndviMax: number;
+  linearSlope: number;
+  linearIntercept: number;
 }
 
 /**
  * Compute Kc from NDVI using the selected formula.
  *
- * Linear (Glenn et al.): Kc = 1.25 × NDVI + 0.20
- * Non-linear (Glenn et al. 2011): Kc = Kc_min + (Kc_max − Kc_min) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
+ * Linear: Kc = slope × NDVI + intercept (crop-specific coefficients)
+ *   Corn:     Kc = 1.69 × NDVI − 0.16  (Bausch, 1995)
+ *   Soybean:  Kc = 1.25 × NDVI + 0.20  (Glenn et al., 2011)
+ *   Wheat:    Kc = 1.64 × NDVI − 0.10  (Er-Raki et al., 2007)
+ *   Rapeseed: Kc = 1.40 × NDVI + 0.10  (Bsaibes et al., 2009)
  *
- * Non-linear uses crop-specific kcMin, kcMax, and ndviMax from CropConfig.
+ * Non-linear (Glenn et al. 2011): Kc = Kc_min + (Kc_max − Kc_min) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
  */
 export function computeKc(ndvi: number, formula: KcFormula, params: KcParams): number {
   if (formula === 'linear') {
-    const kc = 1.25 * ndvi + 0.20;
+    const kc = params.linearSlope * ndvi + params.linearIntercept;
     return Math.max(0, Math.min(1.4, kc));
   }
   // Non-linear (Glenn et al. 2011)

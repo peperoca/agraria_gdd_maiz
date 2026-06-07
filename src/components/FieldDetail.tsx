@@ -76,8 +76,8 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
   const [showOverrideCalendar, setShowOverrideCalendar] = useState(false);
 
   const kcParams: KcParams = useMemo(
-    () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax }),
-    [cropConfig.kcMax, cropConfig.kcMin, cropConfig.ndviMax],
+    () => ({ kcMax: cropConfig.kcMax, kcMin: cropConfig.kcMin, ndviMax: cropConfig.ndviMax, linearSlope: cropConfig.linearSlope, linearIntercept: cropConfig.linearIntercept }),
+    [cropConfig.kcMax, cropConfig.kcMin, cropConfig.ndviMax, cropConfig.linearSlope, cropConfig.linearIntercept],
   );
 
   // Compute both Kc curves — the active one drives ETc, both display on chart
