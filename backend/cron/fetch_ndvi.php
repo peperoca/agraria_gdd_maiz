@@ -69,30 +69,35 @@ function setup() {
       { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
       { id: "dataMask", bands: 1 }
     ],
-    mosaicking: "ORBIT"
+    mosaicking: "SIMPLE"
   };
 }
 
-function evaluatePixel(samples) {
-  // Cloud mask using SCL band
-  // SCL 3=cloud shadow, 8=cloud medium, 9=cloud high, 10=cirrus
-  for (let i = 0; i < samples.length; i++) {
-    let scl = samples[i].SCL;
-    if (scl === 3 || scl === 8 || scl === 9 || scl === 10) continue;
-    let nir = samples[i].B08;
-    let red = samples[i].B04;
-    if (nir + red === 0) continue;
-    let ndvi = (nir - red) / (nir + red);
-    return { ndvi: [ndvi], dataMask: [1] };
+function evaluatePixel(sample) {
+  // Cloud/shadow mask using SCL band
+  // SCL: 0=no data, 1=saturated, 3=cloud shadow, 8=cloud med, 9=cloud high, 10=cirrus, 11=snow
+  let scl = sample.SCL;
+  if (scl === 0 || scl === 1 || scl === 3 || scl === 8 || scl === 9 || scl === 10 || scl === 11) {
+    return { ndvi: [NaN], dataMask: [0] };
   }
-  return { ndvi: [NaN], dataMask: [0] };
+  let nir = sample.B08;
+  let red = sample.B04;
+  if (nir + red === 0) {
+    return { ndvi: [NaN], dataMask: [0] };
+  }
+  let ndvi = (nir - red) / (nir + red);
+  return { ndvi: [ndvi], dataMask: [1] };
 }
 SCRIPT;
 }
 
 function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, string $toDate): ?array {
     $evalscript = get_s2_evalscript();
-    $resolution = 10;
+    // Resolution in degrees (~10m at latitude -34°)
+    // 10m / 110540m per degree ≈ 0.0001° for latitude
+    // 10m / 90890m per degree ≈ 0.00011° for longitude
+    $resX = 0.00011;
+    $resY = 0.0001;
 
     $payload = [
         'input' => [
@@ -118,8 +123,8 @@ function fetch_ndvi_stats(string $token, array $polygon, string $fromDate, strin
             ],
             'aggregationInterval' => ['of' => 'P1D'],
             'evalscript' => $evalscript,
-            'resx' => $resolution,
-            'resy' => $resolution,
+            'resx' => $resX,
+            'resy' => $resY,
         ],
     ];
 
