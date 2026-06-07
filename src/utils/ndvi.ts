@@ -3,7 +3,7 @@ import type { CropConfig } from './cropConfig';
 
 export type KcFormula = 'linear' | 'nonlinear';
 
-const NDVI_MIN = 0.15; // bare soil (global)
+const NDVI_MIN = 0.15; // bare soil baseline
 
 export interface KcParams {
   kcMax: number;
@@ -16,6 +16,8 @@ export interface KcParams {
  *
  * Linear (Glenn et al.): Kc = 1.25 × NDVI + 0.20
  * Non-linear (Glenn et al. 2011): Kc = Kc_min + (Kc_max − Kc_min) × [(NDVI − NDVI_min) / (NDVI_max − NDVI_min)]
+ *
+ * Non-linear uses crop-specific kcMin, kcMax, and ndviMax from CropConfig.
  */
 export function computeKc(ndvi: number, formula: KcFormula, params: KcParams): number {
   if (formula === 'linear') {

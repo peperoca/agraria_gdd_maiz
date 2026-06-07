@@ -181,9 +181,8 @@ function process_ndvi_entry(array $entry, int $fieldId, string $sowingDate, PDO 
     // Clamp NDVI to valid range
     $ndviMean = max(-1, min(1, $ndviMean));
 
-    // Kc = 1.25 * NDVI + 0.20 (Glenn et al.)
-    $kc = round(1.25 * $ndviMean + 0.20, 4);
-    $kc = max(0, min(1.4, $kc)); // Clamp Kc
+    // Store Kc as NULL — computed on frontend using crop-specific formula
+    $kc = null;
 
     // Upsert (scene_id stores the satellite source)
     $upsertStmt = $db->prepare("

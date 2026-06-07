@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import type { Field, DailyGdd, DailyEto, DailyRain, DailyWeatherSummary, NdviReading, DailyETc, DailyIrrigation, SoilMoistureReading } from '../types';
 import { getCropConfig, getBaseCrop } from '../utils/cropConfig';
 import { useWeatherData, type GapFillPreference } from '../hooks/useWeatherData';
-import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons, updateField as apiUpdateField, getFieldPhotos, uploadFieldPhotos, deleteFieldPhoto, type FieldPhoto } from '../utils/api';
+import { getNdviData, getSoilMoistureData, getIrrigationReadings, getFieldOverrides, upsertFieldOverride, deleteFieldOverride, getSeasons } from '../utils/api';
 import type { FieldOverride, Season } from '../types';
 import { applyRainOverrides, applyIrrigationOverrides } from '../utils/applyOverrides';
 import { OverrideCalendar } from './OverrideCalendar';
@@ -40,70 +40,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(field.seasonId ?? null);
 
-  // Notes & Photos
-  const [notes, setNotes] = useState<string>(field.notes ?? '');
-  const [notesSaving, setNotesSaving] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [photos, setPhotos] = useState<FieldPhoto[]>([]);
-  const [photosLoading, setPhotosLoading] = useState(false);
-  const notesTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { setNotes(field.notes ?? ''); }, [field.id, field.notes]);
-
-  // Load photos count on mount, full load when opened
-  useEffect(() => {
-    getFieldPhotos(field.id).then(setPhotos).catch(() => setPhotos([]));
-  }, [field.id]);
-
-  useEffect(() => {
-    if (notesOpen) {
-      setPhotosLoading(true);
-      getFieldPhotos(field.id).then(setPhotos).catch(() => setPhotos([])).finally(() => setPhotosLoading(false));
-    }
-  }, [notesOpen, field.id]);
-
-  const saveNotes = useCallback(async (value: string) => {
-    setNotesSaving(true);
-    try {
-      await apiUpdateField(field.id, { notes: value || null });
-      setNotesSaved(true);
-      setTimeout(() => setNotesSaved(false), 2000);
-    } catch (e) {
-      console.error('Failed to save notes:', e);
-    } finally {
-      setNotesSaving(false);
-    }
-  }, [field.id]);
-
-  const handleNotesChange = useCallback((value: string) => {
-    setNotes(value);
-    setNotesSaved(false);
-    if (notesTimeoutRef.current) clearTimeout(notesTimeoutRef.current);
-    notesTimeoutRef.current = setTimeout(() => saveNotes(value), 1500);
-  }, [saveNotes]);
-
-  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    try {
-      const result = await uploadFieldPhotos(field.id, Array.from(files));
-      setPhotos((prev) => [...result.uploaded, ...prev]);
-    } catch (err) {
-      console.error('Photo upload failed:', err);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [field.id]);
-
-  const handleDeletePhoto = useCallback(async (photoId: number) => {
-    try {
-      await deleteFieldPhoto(photoId);
-      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-    } catch (err) {
-      console.error('Photo delete failed:', err);
-    }
-  }, []);
+  // Notes & photos suppressed for now
 
   // Fetch seasons for this field
   useEffect(() => {
@@ -131,7 +68,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
   const [dailySummaries, setDailySummaries] = useState<DailyWeatherSummary[]>([]);
   const [ndviDataRaw, setNdviDataRaw] = useState<NdviReading[] | null>(null);
   const [etcData, setEtcData] = useState<DailyETc[] | null>(null);
-  const [kcFormula, setKcFormula] = useState<KcFormula>('linear');
+  const [kcFormula, setKcFormula] = useState<KcFormula>('nonlinear');
   const [gapPref, setGapPref] = useState<GapFillPreference>('carry_forward');
   const [soilMoistureData, setSoilMoistureData] = useState<SoilMoistureReading[] | null>(null);
   const [irrigationData, setIrrigationData] = useState<DailyIrrigation[] | null>(null);
@@ -526,16 +463,6 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
               <div className="sec-label" style={{ margin: 0 }}>{t('field.kcFormula')}</div>
               <div className="flex rounded-[var(--r)] overflow-hidden border" style={{ borderColor: 'var(--bdr2)' }}>
                 <button
-                  onClick={() => setKcFormula('linear')}
-                  className="text-[10px] px-2.5 py-1 font-medium transition-colors"
-                  style={{
-                    background: kcFormula === 'linear' ? 'var(--blue)' : 'var(--surface)',
-                    color: kcFormula === 'linear' ? '#fff' : 'var(--tx3)',
-                  }}
-                >
-                  {t('field.kcLinear')}
-                </button>
-                <button
                   onClick={() => setKcFormula('nonlinear')}
                   className="text-[10px] px-2.5 py-1 font-medium transition-colors"
                   style={{
@@ -545,6 +472,16 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
                 >
                   {t('field.kcNonlinear')}
                 </button>
+                <button
+                  onClick={() => setKcFormula('linear')}
+                  className="text-[10px] px-2.5 py-1 font-medium transition-colors"
+                  style={{
+                    background: kcFormula === 'linear' ? 'var(--blue)' : 'var(--surface)',
+                    color: kcFormula === 'linear' ? '#fff' : 'var(--tx3)',
+                  }}
+                >
+                  {t('field.kcLinear')}
+                </button>
               </div>
             </div>
             <p className="text-[9px] mt-1.5" style={{ color: 'var(--tx3)' }}>
@@ -553,14 +490,13 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
                 : t('field.kcNonlinearDesc')
               }
             </p>
-            <p className="text-[9px]" style={{ color: 'var(--tx3)' }}>
-              {t('field.kcChartNote')}
-            </p>
           </div>
           <NdviChart
             data={ndviData}
             altKcData={kcFormula === 'linear' ? ndviDataNonlinear : ndviDataLinear}
             activeFormula={kcFormula}
+            gddData={tGdd}
+            cropConfig={cropConfig}
             onDateClick={field.polygon ? (date) => onNdviDateClick?.(date, ndviData) : undefined}
           />
         </>
@@ -699,112 +635,7 @@ export function FieldDetail({ field, farmLatitude, onNdviDateClick, onAswUpdate 
         </div>
       )}
 
-      {/* Notes — collapsed card (click to expand) */}
-      {!notesOpen && (
-        <button
-          onClick={() => setNotesOpen(true)}
-          className="agraria-card p-3 w-full text-left"
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="sec-label m-0">{t('field.notes')}</div>
-            <span className="text-[10px]" style={{ color: 'var(--tx3)' }}>
-              {field.notesUpdatedAt ? format(parseISO(field.notesUpdatedAt), 'MMM d') : ''}
-              {photos.length > 0 && ` · ${photos.length} 📷`}
-            </span>
-          </div>
-          {notes ? (
-            <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--tx2)' }}>{notes}</p>
-          ) : (
-            <p className="text-xs mt-1 italic" style={{ color: 'var(--tx3)' }}>{t('field.notesPlaceholder')}</p>
-          )}
-        </button>
-      )}
-
-      {/* Notes — expanded view */}
-      {notesOpen && (
-        <div className="agraria-card p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="sec-label m-0">{t('field.notes')}</div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px]" style={{ color: notesSaved ? 'var(--green)' : 'var(--tx3)' }}>
-                {notesSaving ? t('field.notesSaving') : notesSaved ? t('field.notesSaved') : ''}
-              </span>
-              <button
-                onClick={() => { if (notesTimeoutRef.current) { clearTimeout(notesTimeoutRef.current); saveNotes(notes); } setNotesOpen(false); }}
-                className="text-xs px-2 py-0.5 rounded"
-                style={{ background: 'var(--surface2)', color: 'var(--tx2)' }}
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          {/* Text area */}
-          <textarea
-            value={notes}
-            onChange={(e) => handleNotesChange(e.target.value)}
-            onBlur={() => { if (notesTimeoutRef.current) { clearTimeout(notesTimeoutRef.current); saveNotes(notes); } }}
-            placeholder={t('field.notesPlaceholder')}
-            className="w-full text-xs p-2 rounded-[var(--r)] resize-y"
-            style={{ background: 'var(--surface2)', color: 'var(--tx)', border: '1px solid var(--bdr)', minHeight: '100px' }}
-            rows={4}
-          />
-
-          {/* Photos section */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-medium" style={{ color: 'var(--tx2)' }}>{t('field.photos')}</span>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-[11px] px-2 py-0.5 rounded font-medium"
-                style={{ background: 'var(--blue)', color: '#fff' }}
-              >
-                + {t('field.addPhoto')}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-            </div>
-
-            {photosLoading && <p className="text-[11px]" style={{ color: 'var(--tx3)' }}>Loading...</p>}
-
-            {photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-1.5">
-                {photos.map((photo) => (
-                  <div key={photo.id} className="relative group">
-                    <img
-                      src={photo.url}
-                      alt={photo.caption || ''}
-                      className="w-full aspect-square object-cover rounded"
-                      style={{ border: '1px solid var(--bdr)' }}
-                    />
-                    <button
-                      onClick={() => handleDeletePhoto(photo.id)}
-                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}
-                    >
-                      ✕
-                    </button>
-                    {photo.caption && (
-                      <p className="text-[9px] mt-0.5 truncate" style={{ color: 'var(--tx3)' }}>{photo.caption}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!photosLoading && photos.length === 0 && (
-              <p className="text-[11px] italic" style={{ color: 'var(--tx3)' }}>{t('field.noPhotos')}</p>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Notes section suppressed for now */}
 
       {/* Season history — at bottom */}
       {seasons.length > 1 && (

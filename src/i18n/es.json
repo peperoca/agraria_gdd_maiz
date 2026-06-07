@@ -283,6 +283,7 @@
     "kcLabel": "Kc",
     "kcLinearLabel": "Kc Lineal",
     "kcNonlinearLabel": "Kc No lineal",
+    "kcFaoLabel": "Kc FAO-56",
     "ndviAxis": "NDVI",
     "kcAxis": "Kc",
     "ndviFootnote": "NDVI Sentinel-2 (verde). Kc sólido = fórmula activa para ETc. Kc punteado = alternativa. Filtrado de nubes.",

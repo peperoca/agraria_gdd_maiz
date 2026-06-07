@@ -283,6 +283,7 @@
     "kcLabel": "Kc",
     "kcLinearLabel": "Kc Linear",
     "kcNonlinearLabel": "Kc Non-linear",
+    "kcFaoLabel": "Kc FAO-56",
     "ndviAxis": "NDVI",
     "kcAxis": "Kc",
     "ndviFootnote": "Sentinel-2 NDVI (green). Solid Kc = active formula for ETc. Dashed Kc = alternative. Cloud-filtered.",

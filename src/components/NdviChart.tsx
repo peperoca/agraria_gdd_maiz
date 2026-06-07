@@ -13,8 +13,9 @@ import {
 import type { ChartOptions } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format, parseISO } from 'date-fns';
-import type { NdviReading } from '../types';
-import type { KcFormula } from '../utils/ndvi';
+import type { NdviReading, DailyGdd } from '../types';
+import type { CropConfig } from '../utils/cropConfig';
+import { computeFaoKc, type KcFormula } from '../utils/ndvi';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -22,10 +23,12 @@ interface NdviChartProps {
   data: NdviReading[];
   altKcData?: NdviReading[] | null;
   activeFormula?: KcFormula;
+  gddData?: DailyGdd[] | null;
+  cropConfig?: CropConfig;
   onDateClick?: (date: string) => void;
 }
 
-export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviChartProps) {
+export function NdviChart({ data, altKcData, activeFormula, gddData, cropConfig, onDateClick }: NdviChartProps) {
   const { t } = useTranslation();
   const styles = getComputedStyle(document.documentElement);
   const tx3 = styles.getPropertyValue('--tx3').trim() || '#888780';
@@ -38,9 +41,24 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
     [altKcData],
   );
 
+  // Compute FAO reference Kc for each NDVI date using GDD data
+  const faoKcData = useMemo(() => {
+    if (!gddData || !cropConfig || sorted.length === 0) return null;
+    const gddByDate = new Map<string, number>();
+    for (const d of gddData) {
+      gddByDate.set(d.date, d.cumulative);
+    }
+    return sorted.map((r) => {
+      const gdd = gddByDate.get(r.date);
+      if (gdd === undefined) return null;
+      return computeFaoKc(gdd, cropConfig);
+    });
+  }, [gddData, cropConfig, sorted]);
+
   const activeLabel = activeFormula === 'nonlinear' ? t('charts.kcNonlinearLabel') : t('charts.kcLinearLabel');
   const altLabel = activeFormula === 'nonlinear' ? t('charts.kcLinearLabel') : t('charts.kcNonlinearLabel');
   const purple = '#7c3aed';
+  const faoColor = '#888888';
 
   const chartData = useMemo(() => {
     const datasets = [
@@ -79,9 +97,21 @@ export function NdviChart({ data, altKcData, activeFormula, onDateClick }: NdviC
         pointHoverRadius: 4,
         yAxisID: 'yKc',
       }] : []),
+      ...(faoKcData ? [{
+        label: t('charts.kcFaoLabel'),
+        data: faoKcData,
+        borderColor: faoColor,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [3, 3] as number[],
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        yAxisID: 'yKc',
+      }] : []),
     ];
     return { labels: sorted.map((d) => format(parseISO(d.date), 'MMM d')), datasets };
-  }, [sorted, altSorted, green, orange, purple, activeLabel, altLabel]);
+  }, [sorted, altSorted, faoKcData, green, orange, purple, faoColor, activeLabel, altLabel, t]);
 
   const options: ChartOptions<'line'> = {
     responsive: true,
